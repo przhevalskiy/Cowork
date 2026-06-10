@@ -1,12 +1,8 @@
-"""AI Provider implementations for multi-model support."""
-
-from .base import BaseProvider, ProviderRegistry
-from .mistral_provider import MistralProvider
 from .claude_provider import ClaudeProvider
 
-__all__ = [
-    "BaseProvider",
-    "ProviderRegistry",
-    "MistralProvider",
-    "ClaudeProvider",
-]
+
+def get_claude_provider(api_key: str, model: str) -> ClaudeProvider:
+    return ClaudeProvider(api_key=api_key, model=model)
+
+
+__all__ = ["ClaudeProvider", "get_claude_provider"]

@@ -1,21 +1,9 @@
 -- ===========================================
--- Qodex Supabase Schema
--- Run this in Supabase SQL Editor
+-- Cowork Supabase Schema
+-- Run this in Supabase SQL Editor (fresh install)
+-- For existing Qodex DBs, run the migration
+-- section at the bottom first.
 -- ===========================================
-
--- 0. Document formatted chunks cache
---    Persists AI-formatted preview content so document opens are instant
---    after server restarts. Documents are shared (no RLS needed).
-CREATE TABLE IF NOT EXISTS document_formatted_chunks (
-  id            UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
-  document_id   TEXT    NOT NULL,
-  chunk_id      TEXT    NOT NULL,
-  formatted_content TEXT NOT NULL,
-  created_at    TIMESTAMPTZ DEFAULT now(),
-  UNIQUE (document_id, chunk_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_dfc_document_id ON document_formatted_chunks(document_id);
 
 -- 1. Profiles table (auto-populated from auth.users)
 CREATE TABLE IF NOT EXISTS profiles (
@@ -56,17 +44,17 @@ CREATE TRIGGER on_auth_user_created
 
 -- 2. Discussions table
 CREATE TABLE IF NOT EXISTS discussions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  title TEXT NOT NULL DEFAULT 'New Chat',
-  is_active BOOLEAN NOT NULL DEFAULT false,
-  is_public BOOLEAN NOT NULL DEFAULT false,  -- when true, any authenticated user can read via share link
+  id         UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID    NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title      TEXT    NOT NULL DEFAULT 'New Chat',
+  is_active  BOOLEAN NOT NULL DEFAULT false,
+  intent     TEXT,                         -- research | event | media | other
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_discussions_user_id ON discussions(user_id);
-CREATE INDEX idx_discussions_updated_at ON discussions(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_discussions_user_id    ON discussions(user_id);
+CREATE INDEX IF NOT EXISTS idx_discussions_updated_at ON discussions(updated_at DESC);
 
 ALTER TABLE discussions ENABLE ROW LEVEL SECURITY;
 
@@ -88,25 +76,20 @@ CREATE POLICY "Users can delete own discussions"
 
 -- 3. Messages table
 CREATE TABLE IF NOT EXISTS messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  discussion_id UUID NOT NULL REFERENCES discussions(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
-  content TEXT NOT NULL,
-  provider TEXT,
-  tokens_used INTEGER,
+  id              UUID  PRIMARY KEY DEFAULT gen_random_uuid(),
+  discussion_id   UUID  NOT NULL REFERENCES discussions(id) ON DELETE CASCADE,
+  role            TEXT  NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+  content         TEXT  NOT NULL,
+  tokens_used     INTEGER,
   response_time_ms INTEGER,
-  sources JSONB,
-  citations JSONB,
-  suggested_questions JSONB,
-  intent TEXT,
-  research_mode TEXT,
+  intent          TEXT,
   user_display_name TEXT,
-  user_email TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
+  user_email      TEXT,
+  created_at      TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_messages_discussion_id ON messages(discussion_id);
-CREATE INDEX idx_messages_discussion_created ON messages(discussion_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_messages_discussion_id      ON messages(discussion_id);
+CREATE INDEX IF NOT EXISTS idx_messages_discussion_created ON messages(discussion_id, created_at);
 
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
@@ -151,30 +134,26 @@ CREATE POLICY "Users can delete messages in own discussions"
   );
 
 -- ===========================================
--- Share feature: cross-user read access
--- Run this block if upgrading an existing DB
--- (safe to run on a fresh schema too)
+-- Migration: Qodex → Cowork
+-- Run this block on existing Qodex databases
+-- BEFORE applying the schema above.
 -- ===========================================
 
--- Add is_public to existing discussions table (no-op if column already exists)
-ALTER TABLE discussions ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT false;
-CREATE INDEX IF NOT EXISTS idx_discussions_is_public ON discussions(is_public) WHERE is_public = true;
+-- Drop legacy tables
+DROP TABLE IF EXISTS document_formatted_chunks;
 
--- Any authenticated user can SELECT a discussion that the owner has made public.
--- Invariant: owner-scoped policies above are unchanged; this only adds read for public rows.
-CREATE POLICY "Authenticated users can read public discussions"
-  ON discussions FOR SELECT
-  USING (is_public = true AND auth.uid() IS NOT NULL);
+-- discussions: remove share column, add intent
+ALTER TABLE discussions DROP COLUMN IF EXISTS is_public;
+ALTER TABLE discussions ADD COLUMN IF NOT EXISTS intent TEXT;
+DROP INDEX IF EXISTS idx_discussions_is_public;
 
--- Any authenticated user can SELECT messages whose parent discussion is public.
--- Invariant: join back to discussions ensures is_public check cannot be bypassed.
-CREATE POLICY "Authenticated users can read messages in public discussions"
-  ON messages FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM discussions
-      WHERE discussions.id = messages.discussion_id
-        AND discussions.is_public = true
-        AND auth.uid() IS NOT NULL
-    )
-  );
+-- messages: drop columns removed in Cowork
+ALTER TABLE messages DROP COLUMN IF EXISTS provider;
+ALTER TABLE messages DROP COLUMN IF EXISTS sources;
+ALTER TABLE messages DROP COLUMN IF EXISTS citations;
+ALTER TABLE messages DROP COLUMN IF EXISTS suggested_questions;
+ALTER TABLE messages DROP COLUMN IF EXISTS research_mode;
+
+-- Drop old share policies (safe if they don't exist)
+DROP POLICY IF EXISTS "Authenticated users can read public discussions" ON discussions;
+DROP POLICY IF EXISTS "Authenticated users can read messages in public discussions" ON messages;

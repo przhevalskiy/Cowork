@@ -1,4 +1,3 @@
-from .pinecone_service import PineconeService
-from .document_service import DocumentService
+from .discussion_service import DiscussionService, get_discussion_service
 
-__all__ = ["PineconeService", "DocumentService"]
+__all__ = ["DiscussionService", "get_discussion_service"]

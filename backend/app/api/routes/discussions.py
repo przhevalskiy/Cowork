@@ -104,7 +104,6 @@ async def add_message(
         id=str(uuid.uuid4()),
         content=data.content,
         role=data.role,
-        provider=data.provider,
         timestamp=datetime.utcnow(),
     )
     service.add_message(
