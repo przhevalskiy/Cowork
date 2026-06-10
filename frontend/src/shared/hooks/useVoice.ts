@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { voiceService } from '../services/voice';
+import { voiceService } from '../../services/voice';
 
 interface UseVoiceReturn {
   isRecording: boolean;

@@ -113,7 +113,7 @@ export function AccountSettingsModal({ isOpen, onClose }: AccountSettingsModalPr
               </div>
             </div>
             <div className="settings-field settings-preferred-field">
-              <label className="settings-label">What should Qodex call you?</label>
+              <label className="settings-label">What should Cowork call you?</label>
               <div className="settings-input-row">
                 <input
                   type="text"

@@ -50,7 +50,7 @@ export function AuthModal({ isOpen }: AuthModalProps) {
       hideCloseButton
     >
       <div className="auth-header">
-        <img src="/qodex-logo.png" alt="Qodex" className="auth-logo" />
+        <img src="/cowork-logo.png" alt="Cowork" className="auth-logo" />
         <h2 className="auth-title">
           {mode === 'login' ? 'Login or signup below' : 'Create Account'}
         </h2>
@@ -125,7 +125,7 @@ export function AuthModal({ isOpen }: AuthModalProps) {
                   )}
                 </div>
                 <div className="auth-preferred-section">
-                  <label htmlFor="preferredName" className="auth-avatar-label">What should Qodex call you?</label>
+                  <label htmlFor="preferredName" className="auth-avatar-label">What should Cowork call you?</label>
                   <div className="auth-input-row">
                     <input
                       id="preferredName"

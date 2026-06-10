@@ -29,13 +29,6 @@ interface ConversationExportOptions {
   title?: string;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-const PROVIDER_NAMES: Record<string, string> = {
-  mistral: 'Mistral',
-  claude: 'Claude',
-};
-
 function stripMarkdown(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, '$1')
@@ -46,10 +39,8 @@ function stripMarkdown(text: string): string {
     .trim();
 }
 
-/** Convert a bold+italic inline markdown line into TextRun segments. */
 function parseInlineRuns(text: string): TextRun[] {
   const runs: TextRun[] = [];
-  // Split on **bold** and *italic* markers
   const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
   for (const part of parts) {
     if (!part) continue;
@@ -60,7 +51,6 @@ function parseInlineRuns(text: string): TextRun[] {
     } else if (part.startsWith('`') && part.endsWith('`')) {
       runs.push(new TextRun({ text: part.slice(1, -1), font: 'Courier New', size: 18 }));
     } else {
-      // Strip leftover citation markers
       const clean = part.replace(/\[\d+\]/g, '');
       if (clean) runs.push(new TextRun({ text: clean }));
     }
@@ -68,9 +58,7 @@ function parseInlineRuns(text: string): TextRun[] {
   return runs.length ? runs : [new TextRun({ text: '' })];
 }
 
-/** Parse a markdown table block into a docx Table. */
 function buildTable(tableLines: string[]): Table {
-  // Parse rows, skip separator rows
   const rows = tableLines
     .map(line => line.split('|').slice(1, -1).map(c => c.trim()))
     .filter(cells => cells.length > 0 && !cells.every(c => /^[-: ]+$/.test(c)));
@@ -91,13 +79,7 @@ function buildTable(tableLines: string[]): Table {
         width: { size: colWidthPct, type: WidthType.PERCENTAGE },
         children: [
           new Paragraph({
-            children: [
-              new TextRun({
-                text: stripMarkdown(cellText),
-                bold: isHeader,
-                size: 18,
-              }),
-            ],
+            children: [new TextRun({ text: stripMarkdown(cellText), bold: isHeader, size: 18 })],
           }),
         ],
         borders: {
@@ -111,13 +93,9 @@ function buildTable(tableLines: string[]): Table {
     return new TableRow({ children: cells });
   });
 
-  return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    rows: tableRows,
-  });
+  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: tableRows });
 }
 
-/** Convert a markdown content string into an array of docx Paragraphs/Tables. */
 function parseContentToDocx(content: string): Array<Paragraph | Table> {
   const elements: Array<Paragraph | Table> = [];
   const lines = content.split('\n');
@@ -128,7 +106,6 @@ function parseContentToDocx(content: string): Array<Paragraph | Table> {
     const line = lines[i];
     const trimmed = line.trim();
 
-    // Code blocks
     if (trimmed.startsWith('```')) {
       if (!inCodeBlock) {
         inCodeBlock = true;
@@ -138,14 +115,7 @@ function parseContentToDocx(content: string): Array<Paragraph | Table> {
         if (codeLines.length > 0) {
           elements.push(
             new Paragraph({
-              children: [
-                new TextRun({
-                  text: codeLines.join('\n'),
-                  font: 'Courier New',
-                  size: 18,
-                  color: '333333',
-                }),
-              ],
+              children: [new TextRun({ text: codeLines.join('\n'), font: 'Courier New', size: 18, color: '333333' })],
               shading: { type: ShadingType.SOLID, color: 'F5F5F5' },
               spacing: { before: 80, after: 80 },
             })
@@ -155,12 +125,8 @@ function parseContentToDocx(content: string): Array<Paragraph | Table> {
       continue;
     }
 
-    if (inCodeBlock) {
-      codeLines.push(line);
-      continue;
-    }
+    if (inCodeBlock) { codeLines.push(line); continue; }
 
-    // Tables — lookahead to collect all rows
     if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
       const tableLines = [line];
       let j = i + 1;
@@ -174,100 +140,56 @@ function parseContentToDocx(content: string): Array<Paragraph | Table> {
       continue;
     }
 
-    // Horizontal rule
     if (/^[-*_]{3,}$/.test(trimmed)) {
-      elements.push(
-        new Paragraph({
-          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: 'CCCCCC' } },
-          spacing: { before: 120, after: 120 },
-          children: [],
-        })
-      );
+      elements.push(new Paragraph({
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: 'CCCCCC' } },
+        spacing: { before: 120, after: 120 },
+        children: [],
+      }));
       continue;
     }
 
-    // Headings
     if (trimmed.startsWith('#### ')) {
-      elements.push(new Paragraph({
-        text: stripMarkdown(trimmed.replace(/^####\s*/, '')),
-        heading: HeadingLevel.HEADING_4,
-        spacing: { before: 120, after: 60 },
-      }));
+      elements.push(new Paragraph({ text: stripMarkdown(trimmed.replace(/^####\s*/, '')), heading: HeadingLevel.HEADING_4, spacing: { before: 120, after: 60 } }));
       continue;
     }
     if (trimmed.startsWith('### ')) {
-      elements.push(new Paragraph({
-        text: stripMarkdown(trimmed.replace(/^###\s*/, '')),
-        heading: HeadingLevel.HEADING_3,
-        spacing: { before: 160, after: 80 },
-      }));
+      elements.push(new Paragraph({ text: stripMarkdown(trimmed.replace(/^###\s*/, '')), heading: HeadingLevel.HEADING_3, spacing: { before: 160, after: 80 } }));
       continue;
     }
     if (trimmed.startsWith('## ')) {
-      elements.push(new Paragraph({
-        text: stripMarkdown(trimmed.replace(/^##\s*/, '')),
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 200, after: 100 },
-      }));
+      elements.push(new Paragraph({ text: stripMarkdown(trimmed.replace(/^##\s*/, '')), heading: HeadingLevel.HEADING_2, spacing: { before: 200, after: 100 } }));
       continue;
     }
     if (trimmed.startsWith('# ')) {
-      elements.push(new Paragraph({
-        text: stripMarkdown(trimmed.replace(/^#\s*/, '')),
-        heading: HeadingLevel.HEADING_1,
-        spacing: { before: 240, after: 120 },
-      }));
+      elements.push(new Paragraph({ text: stripMarkdown(trimmed.replace(/^#\s*/, '')), heading: HeadingLevel.HEADING_1, spacing: { before: 240, after: 120 } }));
       continue;
     }
 
-    // Bullet list items (catches -, *, •, ●, ○)
-    const bulletMatch = line.match(/^(\s*)([-*\u2022\u25CF\u25E6\u25AA])\s+(.*)$/);
+    const bulletMatch = line.match(/^(\s*)([-*•●◦▪])\s+(.*)$/);
     if (bulletMatch) {
       const indentLevel = Math.floor((bulletMatch[1]?.length || 0) / 2);
-      const itemText = bulletMatch[3];
-      elements.push(
-        new Paragraph({
-          children: parseInlineRuns(itemText),
-          bullet: { level: indentLevel },
-          spacing: { after: 40 },
-        })
-      );
+      elements.push(new Paragraph({ children: parseInlineRuns(bulletMatch[3]), bullet: { level: indentLevel }, spacing: { after: 40 } }));
       continue;
     }
 
-    // Numbered list items
     const numberedMatch = line.match(/^(\s*)(\d+)\.\s+(.*)$/);
     if (numberedMatch) {
-      const itemText = numberedMatch[3];
-      elements.push(
-        new Paragraph({
-          children: parseInlineRuns(itemText),
-          numbering: { reference: 'default-numbering', level: 0 },
-          spacing: { after: 40 },
-        })
-      );
+      elements.push(new Paragraph({ children: parseInlineRuns(numberedMatch[3]), numbering: { reference: 'default-numbering', level: 0 }, spacing: { after: 40 } }));
       continue;
     }
 
-    // Empty line
     if (trimmed === '') {
       elements.push(new Paragraph({ text: '', spacing: { after: 60 } }));
       continue;
     }
 
-    // Regular paragraph (with inline bold/italic)
-    elements.push(
-      new Paragraph({
-        children: parseInlineRuns(line),
-        spacing: { after: 80 },
-      })
-    );
+    elements.push(new Paragraph({ children: parseInlineRuns(line), spacing: { after: 80 } }));
   }
 
   return elements;
 }
 
-/** Separator paragraph between messages. */
 function messageSeparator(): Paragraph {
   return new Paragraph({
     border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: 'E0E0E0' } },
@@ -276,24 +198,16 @@ function messageSeparator(): Paragraph {
   });
 }
 
-/** Role label paragraph (You: / Provider:). */
 function roleLabel(label: string, isUser: boolean): Paragraph {
   return new Paragraph({
-    children: [
-      new TextRun({
-        text: label,
-        bold: true,
-        color: isUser ? '3B82F6' : '10B981',
-        size: 24,
-      }),
-    ],
+    children: [new TextRun({ text: label, bold: true, color: isUser ? '3B82F6' : '10B981', size: 24 })],
     spacing: { after: 100 },
   });
 }
 
 async function loadLogoArrayBuffer(): Promise<ArrayBuffer | null> {
   try {
-    const res = await fetch('/qodex-logo.png');
+    const res = await fetch('/cowork-logo.png');
     if (!res.ok) return null;
     return await res.arrayBuffer();
   } catch {
@@ -308,27 +222,15 @@ function buildDocumentHeader(logoBuffer: ArrayBuffer | null, title: string): Hea
     headerChildren.push(
       new Paragraph({
         children: [
-          new ImageRun({
-            data: logoBuffer,
-            transformation: { width: 36, height: 36 },
-            type: 'png',
-          }),
-          new TextRun({
-            text: '  Qodex',
-            bold: true,
-            size: 26,
-            color: '1E1E1E',
-          }),
+          new ImageRun({ data: logoBuffer, transformation: { width: 36, height: 36 }, type: 'png' }),
+          new TextRun({ text: '  Cowork', bold: true, size: 26, color: '1E1E1E' }),
         ],
         spacing: { after: 80 },
       })
     );
   } else {
     headerChildren.push(
-      new Paragraph({
-        children: [new TextRun({ text: title, bold: true, size: 26 })],
-        spacing: { after: 80 },
-      })
+      new Paragraph({ children: [new TextRun({ text: title, bold: true, size: 26 })], spacing: { after: 80 } })
     );
   }
 
@@ -343,19 +245,17 @@ function buildDocumentHeader(logoBuffer: ArrayBuffer | null, title: string): Hea
   return new Header({ children: headerChildren });
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
-
 export async function exportMessageToDOCX({
   content,
   provider,
   timestamp,
-  title = 'Qodex Response',
+  title = 'Cowork Response',
 }: ExportOptions): Promise<void> {
   const logoBuffer = await loadLogoArrayBuffer();
   const header = buildDocumentHeader(logoBuffer, title);
 
   const metaParts: string[] = [];
-  if (provider) metaParts.push(`Provider: ${PROVIDER_NAMES[provider] || provider}`);
+  if (provider) metaParts.push(`Provider: ${provider}`);
   metaParts.push(`Exported: ${new Date(timestamp || Date.now()).toLocaleString()}`);
 
   const doc = new Document({
@@ -366,15 +266,8 @@ export async function exportMessageToDOCX({
       {
         headers: { default: header },
         children: [
-          new Paragraph({
-            text: title,
-            heading: HeadingLevel.HEADING_1,
-            spacing: { after: 80 },
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: metaParts.join('  |  '), color: '888888', size: 18 })],
-            spacing: { after: 160 },
-          }),
+          new Paragraph({ text: title, heading: HeadingLevel.HEADING_1, spacing: { after: 80 } }),
+          new Paragraph({ children: [new TextRun({ text: metaParts.join('  |  '), color: '888888', size: 18 })], spacing: { after: 160 } }),
           ...parseContentToDocx(content),
         ],
       },
@@ -383,31 +276,20 @@ export async function exportMessageToDOCX({
 
   const buffer = await Packer.toBlob(doc);
   const dateStr = new Date().toISOString().split('T')[0];
-  const providerStr = provider ? `-${provider}` : '';
-  saveAs(buffer, `qodex-response${providerStr}-${dateStr}.docx`);
+  saveAs(buffer, `cowork-response-${dateStr}.docx`);
 }
 
 export async function exportConversationToDOCX({
   messages,
-  title = 'Qodex Conversation',
+  title = 'Cowork Conversation',
 }: ConversationExportOptions): Promise<void> {
   const logoBuffer = await loadLogoArrayBuffer();
   const header = buildDocumentHeader(logoBuffer, title);
 
   const children: Array<Paragraph | Table> = [
+    new Paragraph({ text: title, heading: HeadingLevel.HEADING_1, spacing: { after: 80 } }),
     new Paragraph({
-      text: title,
-      heading: HeadingLevel.HEADING_1,
-      spacing: { after: 80 },
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: `Exported: ${new Date().toLocaleString()}  |  Messages: ${messages.length}`,
-          color: '888888',
-          size: 18,
-        }),
-      ],
+      children: [new TextRun({ text: `Exported: ${new Date().toLocaleString()}  |  Messages: ${messages.length}`, color: '888888', size: 18 })],
       spacing: { after: 200 },
     }),
   ];
@@ -415,8 +297,7 @@ export async function exportConversationToDOCX({
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
     const isUser = msg.role === 'user';
-    const providerName = msg.provider ? PROVIDER_NAMES[msg.provider] || msg.provider : 'Qodex';
-    const label = isUser ? 'You:' : `${providerName}:`;
+    const label = isUser ? 'You:' : 'Cowork:';
 
     children.push(roleLabel(label, isUser));
     children.push(...parseContentToDocx(msg.content));
@@ -436,5 +317,5 @@ export async function exportConversationToDOCX({
   const buffer = await Packer.toBlob(doc);
   const dateStr = new Date().toISOString().split('T')[0];
   const titleSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
-  saveAs(buffer, `qodex-${titleSlug}-${dateStr}.docx`);
+  saveAs(buffer, `cowork-${titleSlug}-${dateStr}.docx`);
 }

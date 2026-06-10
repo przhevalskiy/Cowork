@@ -14,13 +14,13 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState(false);
 
-  const contactEmail = 'openclimatecurriculum@gsb.columbia.edu';
+  const contactEmail = 'communications@gsb.columbia.edu';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Create mailto link with pre-filled content
-    const subject = encodeURIComponent(`Qodex Inquiry from ${name}`);
+    const subject = encodeURIComponent(`Cowork Inquiry from ${name}`);
     const body = encodeURIComponent(
       `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`
     );

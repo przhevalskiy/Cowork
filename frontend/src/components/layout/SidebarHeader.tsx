@@ -13,7 +13,7 @@ export function SidebarHeader({ isCollapsed, onToggleCollapse }: SidebarHeaderPr
           <Zap size={18} className="text-white" />
         </div>
         {!isCollapsed && (
-          <span className="text-lg font-semibold text-text-primary">Qodex</span>
+          <span className="text-lg font-semibold text-text-primary">Cowork</span>
         )}
       </div>
       {onToggleCollapse && (

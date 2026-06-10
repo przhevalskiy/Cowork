@@ -1,1 +1,1 @@
-export { remarkCitations } from './remarkCitations';
+export { extractLinks } from './extractLinks';
