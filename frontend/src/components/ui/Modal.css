@@ -30,7 +30,7 @@
 }
 
 .modal-container.modal-sm {
-  max-width: 384px;
+  max-width: 500px;
 }
 
 .modal-container.modal-md {
@@ -85,7 +85,7 @@
 
 /* Modal Content */
 .modal-content {
-  padding: 16px;
+  padding: 24px;
 }
 
 .modal-container.modal-xl .modal-content {

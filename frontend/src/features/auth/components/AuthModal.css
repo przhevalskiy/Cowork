@@ -6,16 +6,28 @@
   padding: 8px 0 4px;
 }
 
-.auth-logo {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
+.auth-header .chibi-avatars {
+  margin-bottom: 0;
+}
+
+/* Symmetric arc for 3 chibis */
+.auth-header .chibi-avatar:nth-child(1) { top: 6px; }
+.auth-header .chibi-avatar:nth-child(2) { top: -8px; }
+.auth-header .chibi-avatar:nth-child(3) { top: 6px; }
+
+.auth-brand-name {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--gray-900);
+  letter-spacing: -0.5px;
+  line-height: 1;
+  margin-top: 1.35rem;
 }
 
 .auth-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--gray-900);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--gray-500);
   margin: 0;
   text-align: center;
 }
@@ -355,16 +367,15 @@
 @media (max-width: 640px) {
   .auth-header {
     padding: 4px 0;
-    gap: 8px;
+    gap: 6px;
   }
 
-  .auth-logo {
-    width: 40px;
-    height: 40px;
+  .auth-brand-name {
+    font-size: 24px;
   }
 
   .auth-title {
-    font-size: 18px;
+    font-size: 13px;
   }
 
   .auth-form {

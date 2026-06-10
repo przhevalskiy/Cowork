@@ -3,6 +3,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuthStore } from '../store';
 import { getRememberMe, setRememberMe } from '@/shared/services/supabase';
 import { AVATAR_ICONS, getAvatarIcon } from '@/shared/constants/avatarIcons';
+import { ChibiAvatars } from '@/features/chat/components/ui/ChibiAvatars';
 import './AuthModal.css';
 
 interface AuthModalProps {
@@ -50,10 +51,11 @@ export function AuthModal({ isOpen }: AuthModalProps) {
       hideCloseButton
     >
       <div className="auth-header">
-        <img src="/cowork-logo.png" alt="Cowork" className="auth-logo" />
-        <h2 className="auth-title">
+        <ChibiAvatars />
+        <span className="auth-brand-name">Cowork</span>
+        <p className="auth-title">
           {mode === 'login' ? 'Login or signup below' : 'Create Account'}
-        </h2>
+        </p>
       </div>
 
       <form className="auth-form" onSubmit={handleSubmit}>

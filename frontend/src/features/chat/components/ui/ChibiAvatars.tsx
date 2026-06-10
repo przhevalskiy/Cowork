@@ -20,10 +20,11 @@ function spritePos(col: number, row: number) {
   return `${x} ${y}`;
 }
 
-export function ChibiAvatars() {
+export function ChibiAvatars({ count }: { count?: number } = {}) {
+  const list = count != null ? AVATARS.slice(0, count) : AVATARS;
   return (
     <div className="chibi-avatars">
-      {AVATARS.map((avatar, i) => (
+      {list.map((avatar, i) => (
         <div
           key={avatar.label}
           className="chibi-avatar"
