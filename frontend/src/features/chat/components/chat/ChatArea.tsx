@@ -379,9 +379,9 @@ function EmptyState() {
         <RotatingText
           texts={[
             "What can I help you submit today?",
+            "Let's get your request to the team.",
             "Ready to take your next intake request?",
-            "What communications project can I help with?",
-            "How can I support your marketing team today?",
+            "Got a deadline? Let's start.",
           ]}
           interval={4500}
         />
