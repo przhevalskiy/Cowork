@@ -5,8 +5,6 @@ import { exportConversationToDOCX, exportMessageToDOCX } from '@/shared/services
 import { Message } from '@/shared/types';
 import './ExportDropdown.css';
 
-// ── Icons ─────────────────────────────────────────────────────────────────────
-
 function PdfIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -24,8 +22,6 @@ function DocxIcon() {
     </svg>
   );
 }
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 type ExportFormat = 'pdf' | 'docx';
 
@@ -47,14 +43,11 @@ interface MessageProps {
 
 type ExportDropdownProps = ConversationProps | MessageProps;
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export default function ExportDropdown(props: ExportDropdownProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<ExportFormat | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -103,17 +96,14 @@ export default function ExportDropdown(props: ExportDropdownProps) {
 
   return (
     <div className="export-dropdown" ref={ref}>
-      {/* Trigger — render prop so parent controls button appearance */}
       {props.children(open, toggle)}
 
-      {/* Loading spinner overlay on trigger (shown when exporting) */}
       {loading && (
         <span className="export-dropdown__loading-indicator" aria-label="Exporting…">
           <Loader2 size={12} className="spinning" />
         </span>
       )}
 
-      {/* Dropdown menu */}
       {open && (
         <div className="export-dropdown__menu">
           <button

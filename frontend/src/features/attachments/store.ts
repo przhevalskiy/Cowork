@@ -3,9 +3,7 @@ import { AttachmentSummary, AttachmentDetail } from '@/shared/types';
 import { api } from '@/shared/services/api';
 
 interface AttachmentState {
-  /** Attachment summaries for the active discussion */
   attachments: AttachmentSummary[];
-  /** Currently previewed attachment (full detail with text) */
   previewAttachment: AttachmentDetail | null;
   isUploading: boolean;
   uploadProgress: number;
@@ -14,17 +12,11 @@ interface AttachmentState {
 }
 
 interface AttachmentActions {
-  /** Fetch all attachments for a discussion */
   fetchAttachments: (discussionId: string) => Promise<void>;
-  /** Upload a file as a conversation attachment */
   uploadAttachment: (discussionId: string, file: File) => Promise<AttachmentSummary>;
-  /** Delete an attachment */
   deleteAttachment: (discussionId: string, attachmentId: string) => Promise<void>;
-  /** Load full detail for preview */
   loadPreview: (discussionId: string, attachmentId: string) => Promise<void>;
-  /** Close preview */
   closePreview: () => void;
-  /** Reset store when switching discussions */
   reset: () => void;
   clearError: () => void;
 }
@@ -58,13 +50,11 @@ export const useAttachmentStore = create<AttachmentStore>((set) => ({
       set({ uploadProgress: 30 });
       const attachment = await api.uploadAttachment(discussionId, file);
       set({ uploadProgress: 100 });
-
       set((state) => ({
         attachments: [...state.attachments, attachment],
         isUploading: false,
         uploadProgress: 0,
       }));
-
       return attachment;
     } catch (error) {
       set({ error: (error as Error).message, isUploading: false, uploadProgress: 0 });
@@ -97,8 +87,6 @@ export const useAttachmentStore = create<AttachmentStore>((set) => ({
   },
 
   closePreview: () => set({ previewAttachment: null }),
-
   reset: () => set(initialState),
-
   clearError: () => set({ error: null }),
 }));

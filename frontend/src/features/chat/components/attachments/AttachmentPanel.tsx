@@ -1,17 +1,14 @@
 import { useRef, useState } from 'react';
-import { Paperclip, X, FileText, ImageIcon, Upload, Eye, Trash2 } from 'lucide-react';
+import { Paperclip, X, FileText, Upload, Eye, Trash2 } from 'lucide-react';
 import { useAttachmentStore } from '@/features/attachments/store';
 import './AttachmentPanel.css';
 
-const ALLOWED_EXTENSIONS = ['.pdf', '.txt', '.md', '.docx', '.jpg', '.jpeg', '.png', '.webp'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.txt', '.md', '.docx'];
 const ALLOWED_TYPES = [
   'application/pdf',
   'text/plain',
   'text/markdown',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
 ];
 
 interface AttachmentPanelProps {
@@ -97,17 +94,14 @@ export function AttachmentPanel({ discussionId, isOpen, onClose }: AttachmentPan
         </div>
 
         <p className="attachment-panel-desc">
-          Attached files provide context for this conversation.
+          Attached files provide context for this conversation. They are not indexed into the knowledge base.
         </p>
 
         {attachments.length > 0 && (
           <div className="attachment-panel-list">
             {attachments.map((att) => (
               <div key={att.id} className="attachment-panel-item">
-                {att.is_image
-                  ? <ImageIcon size={16} className="attachment-panel-item-icon" />
-                  : <FileText size={16} className="attachment-panel-item-icon" />
-                }
+                <FileText size={16} className="attachment-panel-item-icon" />
                 <div className="attachment-panel-item-info">
                   <span className="attachment-panel-item-name">{att.filename}</span>
                   <span className="attachment-panel-item-meta">
@@ -135,7 +129,6 @@ export function AttachmentPanel({ discussionId, isOpen, onClose }: AttachmentPan
           </div>
         )}
 
-        {/* Upload area */}
         <div
           onDrop={handleDrop}
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -155,7 +148,6 @@ export function AttachmentPanel({ discussionId, isOpen, onClose }: AttachmentPan
           style={{ display: 'none' }}
         />
 
-        {/* Progress */}
         {isUploading && uploadProgress > 0 && (
           <div className="attachment-panel-progress">
             <div className="attachment-panel-progress-bar">
@@ -167,7 +159,6 @@ export function AttachmentPanel({ discussionId, isOpen, onClose }: AttachmentPan
           </div>
         )}
 
-        {/* Error */}
         {error && (
           <div className="attachment-panel-error">
             {error}

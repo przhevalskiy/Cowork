@@ -119,21 +119,8 @@
   margin-bottom: 16px;
 }
 
-.file-preview-chunk h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-}
-
-.file-preview-chunk p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.7;
-}
-
 .file-preview-list {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.7;
   white-space: pre-wrap;

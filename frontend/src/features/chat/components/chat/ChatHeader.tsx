@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Share2, Download, Paperclip } from 'lucide-react';
-import { ShareModal } from '../modals/ShareModal';
+import { Download, Paperclip } from 'lucide-react';
 import { AttachmentPanel } from '../attachments/AttachmentPanel';
+import { FilePreviewModal } from '../attachments/FilePreviewModal';
 import ExportDropdown from '../ui/ExportDropdown';
 import { useChatStore } from '../../store';
 import { useAttachmentStore } from '@/features/attachments/store';
@@ -10,11 +10,9 @@ import './ChatHeader.css';
 interface ChatHeaderProps {
   discussionId: string;
   discussionTitle: string;
-  isPublic?: boolean;
 }
 
-export function ChatHeader({ discussionId, discussionTitle, isPublic = false }: ChatHeaderProps) {
-  const [showShareModal, setShowShareModal] = useState(false);
+export function ChatHeader({ discussionId, discussionTitle }: ChatHeaderProps) {
   const [showAttachments, setShowAttachments] = useState(false);
   const { messages } = useChatStore();
   const { attachments, fetchAttachments, reset } = useAttachmentStore();
@@ -45,7 +43,7 @@ export function ChatHeader({ discussionId, discussionTitle, isPublic = false }: 
           <ExportDropdown
             mode="conversation"
             messages={messages}
-            title={discussionTitle || 'Qodex Conversation'}
+            title={discussionTitle || 'Cowork Conversation'}
           >
             {(_open, toggle) => (
               <button
@@ -59,15 +57,6 @@ export function ChatHeader({ discussionId, discussionTitle, isPublic = false }: 
               </button>
             )}
           </ExportDropdown>
-
-          <button
-            className="chat-header-btn"
-            onClick={() => setShowShareModal(true)}
-            title="Share conversation"
-          >
-            <Share2 size={18} />
-            <span className="visually-hidden">Share</span>
-          </button>
         </div>
 
         {showAttachments && (
@@ -79,13 +68,7 @@ export function ChatHeader({ discussionId, discussionTitle, isPublic = false }: 
         )}
       </div>
 
-      <ShareModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        discussionId={discussionId}
-        discussionTitle={discussionTitle}
-        isPublic={isPublic}
-      />
+      <FilePreviewModal />
     </>
   );
 }
