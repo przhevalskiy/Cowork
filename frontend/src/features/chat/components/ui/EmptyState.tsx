@@ -9,7 +9,7 @@ export function EmptyState() {
       </div>
 
       {/* Greeting */}
-      <h1 className="text-3xl font-semibold text-text-primary mb-2">
+      <h1 className="text-xl font-semibold text-text-primary mb-2">
         How can I help you today?
       </h1>
       <p className="text-text-secondary text-center max-w-md mb-8">
