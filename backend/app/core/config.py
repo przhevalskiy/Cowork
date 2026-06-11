@@ -22,10 +22,6 @@ class Settings(BaseSettings):
     hive_workspace_id: str = ""
     hive_uat_project_id: str = ""
 
-    # Mistral (fallback)
-    mistral_api_key: str = ""
-    mistral_model: str = "mistral-large-latest"
-
     # Email
     resend_api_key: str = ""
     email_cc_address: str = ""
