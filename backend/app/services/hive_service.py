@@ -39,6 +39,18 @@ SERVICE_LABELS = {
     "consultation":    "MarComms Consultation",
 }
 
+# VDR Impact Submissions — sub-project IDs (parent: Ha2kdQfm8v5CSd3hp).
+# impact_type drives routing; everything not explicitly mapped goes to
+# "VDR_Research and Impact Submissions".
+VDR_AWARDS_PROJECT_ID       = "y3PEd49oAfrjG3MPL"   # VDR Awards Submissions
+VDR_MEDIA_PROJECT_ID        = "ttf3zbwo2jKBoexHn"   # VDR Media Mention Submissions
+VDR_RESEARCH_PROJECT_ID     = "W2ChxFDWE8WhFbuE5"   # VDR_Research and Impact Submissions
+
+VDR_PROJECT_MAP = {
+    "Award":         VDR_AWARDS_PROJECT_ID,
+    "Media mention": VDR_MEDIA_PROJECT_ID,
+}
+
 _hive_service: Optional["HiveService"] = None
 
 
@@ -68,6 +80,35 @@ def _build_description(fields: dict) -> str:
     )
 
 
+def _build_vdr_description(fields: dict) -> str:
+    """Format collected VDR fields as structured HTML matching the research-impact form."""
+    role       = fields.get("submitter_role", "—")
+    faculty    = fields.get("faculty_name", "—")
+    division   = fields.get("division", "—")
+    impact     = fields.get("impact_type", "—")
+    summary    = fields.get("summary", "—")
+    expertise  = fields.get("area_of_expertise", "—")
+    collab     = fields.get("collaborators", "—")
+    channels   = fields.get("promo_channels", "—")
+    details    = fields.get("details", "—")
+
+    return (
+        "<h3>Section I — General Information</h3>"
+        f"<p><strong>Submitting as:</strong> {role}</p>"
+        f"<p><strong>Faculty member:</strong> {faculty}</p>"
+        f"<p><strong>Division:</strong> {division}</p>"
+        "<h3>Section II — Research Impact</h3>"
+        f"<p><strong>Impact type:</strong> {impact}</p>"
+        f"<p><strong>Summary:</strong> {summary}</p>"
+        f"<p><strong>Area of expertise:</strong> {expertise}</p>"
+        f"<p><strong>CBS collaborator(s):</strong> {collab}</p>"
+        "<h3>Section III — Sharing Your Success</h3>"
+        f"<p><strong>Promote via:</strong> {channels}</p>"
+        f"<p><strong>Additional details:</strong> {details}</p>"
+        "<p><em>Submitted via Cowork</em></p>"
+    )
+
+
 class HiveService:
     def __init__(self, api_key: str, user_id: str, uat_project_id: str = ""):
         self._headers = {"api_key": api_key, "user_id": user_id}
@@ -91,6 +132,35 @@ class HiveService:
             "projectId": project_id,
             "title": title,
             "description": _build_description(fields),
+        }
+
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.post(
+                f"{HIVE_BASE_URL}/actions",
+                headers=self._headers,
+                json=payload,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def create_vdr_action(self, fields: dict) -> dict:
+        impact_type = fields.get("impact_type", "")
+        # UAT mode: route everything to the test project
+        if self._uat_project_id:
+            project_id = self._uat_project_id
+        else:
+            project_id = VDR_PROJECT_MAP.get(impact_type, VDR_RESEARCH_PROJECT_ID)
+
+        faculty = fields.get("faculty_name") or fields.get("summary", "Faculty")
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %I:%M %p")
+        summary = fields.get("summary", "Research impact")
+        title = f"{summary[:60]} - VDR {impact_type or 'Submission'} - {faculty} {ts}"
+
+        payload = {
+            "workspaceId": WORKSPACE_ID,
+            "projectId": project_id,
+            "title": title,
+            "description": _build_vdr_description(fields),
         }
 
         async with httpx.AsyncClient(timeout=15) as client:

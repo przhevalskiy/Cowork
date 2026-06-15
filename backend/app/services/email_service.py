@@ -37,7 +37,7 @@ def send_submission_copy(fields: dict, hive_task_id: str) -> None:
         resend.Emails.send({
             "from": "Cowork <onboarding@resend.dev>",
             "to": settings.email_cc_address,
-            "subject": f"Cowork Submission — {fields.get('service_type', 'Request')} ({hive_task_id})",
+            "subject": f"Cowork Submission — {fields.get('service_type') or fields.get('impact_type') or 'Request'} ({hive_task_id})",
             "html": html,
         })
         logger.info(f"Submission copy sent to {settings.email_cc_address}")

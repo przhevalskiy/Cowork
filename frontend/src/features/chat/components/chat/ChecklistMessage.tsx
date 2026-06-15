@@ -2,6 +2,7 @@ import { CheckCircle2 } from 'lucide-react';
 import './ChecklistMessage.css';
 
 const KEY_LABELS: Record<string, string> = {
+  // MarComms service request
   contact_name: 'Contact Name',
   role:         'Role',
   uni:          'UNI',
@@ -10,6 +11,15 @@ const KEY_LABELS: Record<string, string> = {
   service_type: 'Service',
   brief:        'Brief',
   details:      'Additional Details',
+  // VDR research impact submission
+  submitter_role:    'Submitting As',
+  faculty_name:      'Faculty Member',
+  division:          'Division',
+  impact_type:       'Impact Type',
+  summary:           'Summary',
+  area_of_expertise: 'Area of Expertise',
+  collaborators:     'CBS Collaborator(s)',
+  promo_channels:    'Promote Via',
 };
 
 const SERVICE_LABELS: Record<string, string> = {

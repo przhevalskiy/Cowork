@@ -26,10 +26,17 @@ from app.auth import get_current_user, UserContext
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 logger = logging.getLogger(__name__)
 
-BASE_SYSTEM_PROMPT = """You are Cowork, the CBS Marketing & Communications intake assistant.
-Your job is to collect the information needed to file a service request with the MarComms team in Hive.
+BASE_SYSTEM_PROMPT = """You are Cowork, the CBS Marketing & Communications assistant. You handle two kinds of requests:
 
-Required fields to collect through natural conversation (ask 1-2 at a time, never all at once):
+(A) MARCOMMS SERVICE REQUEST — someone wants the MarComms team to DO work for them: a press release, event promotion, photography, social media, a web article, video, digital screens, web services, etc.
+(B) RESEARCH IMPACT / SUCCESS SUBMISSION (VDR) — a faculty member, or someone on their behalf, is REPORTING a completed achievement so it can be featured and promoted: an award, book, case study, grant, media mention, notable service, research article, or speaking engagement / major event appearance.
+
+First, decide which kind of request this is from the user's first message, then follow the matching flow. If it is genuinely unclear, ask one brief clarifying question. (Any automatic "intent" hint below applies only to Flow A service-type routing — ignore it if this is a VDR submission.)
+
+Ask only 1-2 questions at a time, never all at once. Be concise, warm, and professional.
+
+=== FLOW A — MarComms service request ===
+Required fields:
 - contact_name: requester's full name
 - role: Staff, Faculty, Student, or External
 - uni: Columbia UNI (e.g. ap3456) — if not Columbia-affiliated say N/A
@@ -55,7 +62,20 @@ Routing guide — pick service_type based on the request:
 
 Once all required fields are gathered, call show_checklist immediately — do not output any text before calling the tool.
 After the user confirms, call submit_to_hive immediately — do not output any text before calling the tool.
-Be concise, warm, and professional."""
+
+=== FLOW B — VDR research impact / success submission ===
+Required fields:
+- submitter_role: "Faculty member", "PhD student", or "Staff member submitting on behalf of a faculty member"
+- faculty_name: the faculty member whose achievement this is (their own name if they are the submitter)
+- division: Accounting; Decision, Risk and Operations; Economics; Finance; Management; Marketing; or Other
+- impact_type: Award, Book, Case Study, Grant, Media mention, Notable Service, Research article, Speaking Engagement/Major event appearance, or Other
+- summary: a short title or summary of the achievement
+- collaborators: CBS collaborator name(s) — faculty and current or former PhD students; use "None" if there were none
+Optional fields (capture only if the user offers them — do not interrogate):
+- area_of_expertise, promo_channels (where the school may promote it), details
+
+Once all required VDR fields are gathered, call show_vdr_checklist immediately — do not output any text before calling the tool.
+After the user confirms, call submit_vdr immediately — do not output any text before calling the tool."""
 
 
 class ChatRequest(BaseModel):
@@ -191,6 +211,9 @@ async def stream_chat(
             if name == "show_checklist":
                 yield f"data: {json.dumps({'type': 'checklist', 'fields': inp.get('fields', {}), 'intent': discussion.intent or 'other'})}\n\n"
 
+            elif name == "show_vdr_checklist":
+                yield f"data: {json.dumps({'type': 'checklist', 'fields': inp.get('fields', {}), 'intent': 'vdr'})}\n\n"
+
             elif name == "submit_to_hive":
                 hive_task_id = f"HIVE-{uuid.uuid4().hex[:8].upper()}"
                 if settings.hive_api_key:
@@ -202,6 +225,18 @@ async def stream_chat(
                         logger.error(f"Hive API error: {hive_err}")
                 send_submission_copy(inp.get("fields", {}), hive_task_id)
                 yield f"data: {json.dumps({'type': 'submitted', 'hive_task_id': hive_task_id, 'message': 'Your request has been submitted to the marketing team.'})}\n\n"
+
+            elif name == "submit_vdr":
+                hive_task_id = f"HIVE-{uuid.uuid4().hex[:8].upper()}"
+                if settings.hive_api_key:
+                    try:
+                        hive = get_hive_service()
+                        result = await hive.create_vdr_action(fields=inp.get("fields", {}))
+                        hive_task_id = str(result.get("id") or result.get("_id") or hive_task_id)
+                    except Exception as hive_err:
+                        logger.error(f"Hive API error (VDR): {hive_err}")
+                send_submission_copy(inp.get("fields", {}), hive_task_id)
+                yield f"data: {json.dumps({'type': 'submitted', 'hive_task_id': hive_task_id, 'message': 'Your research impact submission has been sent to the MarComms team.'})}\n\n"
 
         # Persist text-only assistant message — skip when a tool was called (tool events are the canonical message)
         response_ms = int((time.time() - _t0) * 1000)
