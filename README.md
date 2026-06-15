@@ -1,353 +1,197 @@
-# Qodex — AI-Powered Knowledge Base Chat Platform
+# Cowork — Marketing & Communications Intake Assistant
 
-AI-powered research platform with multi-provider RAG, sentence-level citation attribution, and causal bridge inference. Built for academic and institutional research, featuring auditable reasoning chains, document-grounded responses, and real-time streaming across Claude and Mistral.
+Cowork is a conversational intake assistant for the **CBS (Columbia Business School) Marketing & Communications** team. Instead of filling out a static service-request form, requesters chat with Cowork in natural language. The assistant gathers everything the MarComms team needs, shows a confirmation checklist, and — once confirmed — files a structured task into the correct **Hive** sub-project automatically.
+
+It is built on Claude tool use, with real-time SSE streaming, Supabase auth, and a React frontend.
+
+> **Note on naming:** the repository folder is still named *Qodex*, the project's original name. The shipping product is **Cowork**.
+
+---
+
+## How It Works
+
+```
+User describes a request
+        │
+        ▼
+Intent classifier  ──►  tags the conversation (research / social_media / event / media / other)
+        │               zero-latency regex; steers the system prompt
+        ▼
+Claude (tool use)  ──►  collects required fields through natural conversation,
+        │               one or two questions at a time
+        ▼
+show_checklist     ──►  frontend renders a structured summary for the user to review
+        │
+        ▼
+User confirms
+        │
+        ▼
+submit_to_hive     ──►  backend creates a Hive action in the correct MarComms sub-project
+        │               + emails a copy of the submission (Resend)
+        ▼
+"Submitted to the marketing team"  +  Hive task ID
+```
+
+If Claude is overloaded (HTTP 529), the stream transparently falls back to **Mistral** with the same system prompt and tools.
 
 ---
 
 ## Key Features
 
-### Multi-Provider AI Chat
-- Switch between **Claude (Sonnet)** and **Mistral (Large)** as primary chat providers
-- Real-time SSE streaming with graceful truncation and **Continue On** for long responses
-- Provider-specific prompt engineering and citation policies
-- **Auto mode**: intent-based provider routing (e.g. Claude for explanations and critiques, Mistral for summaries and lesson plans)
-- Visual provider toggles on desktop; modal selector on mobile
+### Conversational Intake (Claude tool use)
+- Single streaming endpoint drives the whole flow — collect → confirm → submit
+- **Required fields** collected through conversation: contact name, role (Staff / Faculty / Student / External), Columbia UNI, department, whether it's event-related, service type, and a project brief; plus optional free-form details
+- Two Claude tools (`backend/app/core/tools.py`):
+  - **`show_checklist`** — emits a structured summary the user reviews before submission
+  - **`submit_to_hive`** — files the confirmed request into Hive
+- The system prompt includes a routing guide so Claude maps each request to the right one of the 10 MarComms services
 
-### Advanced RAG Pipeline
-- **Pinecone Vector Database**: Semantic search with cosine similarity (text-embedding-3-small, 1536 dims)
-- **Entity-First Retrieval**: N-gram extraction with instructor name matching to prevent cross-contamination
-- **Research Modes**: Focused (7 sources, score ≥ 0.40), Broad (12 sources, ≥ 0.30), Exploratory (20 sources, ≥ 0.25)
-- **Intent Classification**: 11 specialized intents + generalist fallback (Summarize, Explain, Compare, Builder, Find Readings, Case Analysis, Assessment, Critique, Methodology, Lesson Plan, etc.) with zero-latency regex matching
-- **Smart Context Injection**: Token-aware chunking (500 tokens/chunk, 50 token overlap) with structure preservation
-- **Query Rewriting**: Mistral-based pronoun resolution for follow-up questions (e.g. "tell me more about it") — skipped automatically when no pronouns or no prior context detected
+### Intent Classification (zero-latency)
+Regex-based classifier (`backend/app/services/intent_classifier.py`) tags the conversation on the first message and steers the intake prompt. No LLM call.
 
-### Citation System
-- **Inline markers**: `[N]` (grounded fact from source N), `[AI:N,M]` (inference extending sources N and M), `[AI]` (pure general knowledge)
-- Clickable citation chips with relevance score tooltip and document preview
-- Backend post-processing ensures `[N]` and `[AI]` are never placed on the same claim (semantically contradictory)
-- Remark plugin parses markers from streamed markdown for interactive rendering
+| Intent | Label | Steers toward |
+|--------|-------|---------------|
+| `research` | Research | media_outreach / web_article (press, op-eds, PR) |
+| `social_media` | Social Media | social_media (checked before `event` so "social posts for an event" routes here) |
+| `event` | Event | event_promotion / event_coverage / social_media |
+| `media` | Media | media_outreach / photo (press kits, brand assets) |
+| `other` | General | fallback, no specialization |
 
-### Document & Attachment Management
-- **Global Knowledge Base**: Upload PDFs, DOCX, TXT, MD files (shared across all users, indexed to Pinecone)
-- **Conversation Attachments**: Discussion-scoped files (PDFs, DOCX, TXT, MD, images) injected as context without Pinecone indexing
-- **Document Preview**: Modal with full-text view, navigable chunks, and chunk-level highlight of the retrieved section
-- **L2 Format Cache**: Formatted chunk content persisted to Supabase (`document_formatted_chunks`) for instant document opens
+### Hive Integration
+- `backend/app/services/hive_service.py` posts to the Hive `/actions` API
+- Routes each request to the correct **MarComms Service Requests** sub-project based on `service_type`:
 
-### User Authentication & Personalization
-- **Supabase Auth**: Email/password with JWT verification (ES256/RS256/EdDSA via JWKS + HS256 fallback) and email confirmation
-- **User Profiles**: Avatar selection, display name, preferred name — auto-created on signup via trigger
-- **Row-Level Security**: User-scoped discussions and messages with PostgreSQL RLS
-- **Session Persistence**: LocalStorage + Zustand for seamless cross-session experience
+  | `service_type` | Sub-project |
+  |----------------|-------------|
+  | `web_services` | Web Services / Digital Marketing |
+  | `media_outreach` | Media Outreach |
+  | `photo` | Photo Request |
+  | `digital_screens` | Digital Screens |
+  | `web_article` | Web Article |
+  | `event_coverage` | Event Coverage |
+  | `youtube` | YouTube / Video |
+  | `social_media` | Social Media |
+  | `event_promotion` | Event Promotion |
+  | `consultation` | MarComms Consultation |
 
-### Intelligent Conversation Management
-- **Discussion System**: Create, rename, delete, and share conversations with auto-generated titles
-- **Public Sharing**: Toggle any discussion public; shareable `/share/:discussionId` links
-- **Message History**: Persistent Supabase storage with per-message tokens, latency, sources, citations, and research mode
-- **Suggested Questions**: AI-generated follow-ups (max 4) based on conversation context
-- **URL Routing**: Deep-link to any discussion via `/chat/:discussionId`
+- Collected fields are formatted into structured HTML matching the team's Hive form layout
+- **UAT mode**: set `HIVE_UAT_PROJECT_ID` to route *all* submissions to a single test project
 
-### Empty State Quick Actions
-- 9 category chips (Case Studies, Course Readings, Simulations, etc.) each expand a submenu of 5 curated prompts
-- Clicking a submenu item auto-submits the prompt
-- Hovering a submenu item or journey question previews it as the input placeholder
+### Email Copy (Resend)
+On every submission, a formatted copy of the intake (with the Hive task ID) is emailed to `EMAIL_CC_ADDRESS` via Resend — a paper trail for the team. Silently skipped if Resend isn't configured.
 
-### Export & Voice
-- **Export Chat (PDF)**: Export the current conversation to PDF with formatting, citations, title, and timestamps
-- **Export Chat (DOCX)**: Save the current conversation as a Word document with structured formatting
-- **Export History**: Export your full discussion list to PDF with title, timestamps, and chat URL per discussion
-- **Voice Input**: Web Speech API integration for speech-to-text transcription
-- **Share**: Shareable discussion links with public RLS access
+### Reference Attachments
+- Users can upload reference documents to a conversation (PDF, DOCX, TXT, MD, CSV, JSON)
+- Text is extracted in-memory (`attachment_service.py`) and injected into the system prompt to inform Cowork's intake questions
+- **In-memory only** — attachments are scoped to the server process, not persisted to the database
 
-### Mobile-First Design
-- Fully responsive layout (640px, 768px, 1024px breakpoints)
-- Touch-friendly UI with 44px minimum tap targets
-- Collapsible sidebar with directional cursor cue on the drag handle
-- Hamburger menu with slide-out drawer for mobile navigation
-- Provider selector modal for mobile
-- iOS-optimized input fields (16px font to prevent zoom)
+### Conversations & Auth
+- **Supabase Auth**: email/password with JWT verification; profiles auto-created on signup via DB trigger
+- **Discussions**: create, rename, delete; auto-titled from the first message; intent stored per discussion
+- **Row-Level Security**: discussions and messages scoped to their owner
+- Persistent message history with per-message latency and intent
+
+### Streaming & UX
+- **SSE** streaming via `sse-starlette`; typed events: `discussion_title` → `intent` → `chunk` (repeated) → `checklist` / `submitted` → `done`
+- React frontend with Zustand state, voice input (Web Speech API), and PDF/DOCX export of conversations
+- Mobile-first responsive layout
 
 ---
 
-## Architecture Overview
+## Architecture
 
 ### Backend (Python 3.11 + FastAPI)
+- **FastAPI** + uvicorn, SSE streaming (`sse-starlette`)
+- **Supabase (PostgreSQL)** for auth, profiles, discussions, messages — all with RLS
+- **AI providers** (`backend/app/providers/`):
+  - **Claude** (`claude-sonnet-4-6`, configurable) — Anthropic SDK, async streaming, tool use — the primary provider
+  - **Mistral** (`mistral-large-latest`) — async streaming fallback used only when Claude is overloaded
+- **Services** (`backend/app/services/`):
+  - `discussion_service` — Supabase-backed CRUD for discussions and messages
+  - `hive_service` — Hive `/actions` API client + sub-project routing (singleton via `get_hive_service()`)
+  - `email_service` — Resend submission-copy email
+  - `attachment_service` — in-memory per-discussion text extraction and context assembly
+  - `intent_classifier` — regex intent detection
+- **Auth** (`backend/app/auth/`): Supabase JWT verification injected via the `get_current_user` FastAPI dependency
 
-**Framework & Runtime**
-- FastAPI with uvicorn ASGI server
-- SSE (Server-Sent Events) streaming via sse-starlette
-- CORS middleware (configurable via `CORS_ORIGINS` env var)
-- Lifespan hooks: bootstraps document registry from Pinecone on startup if local registry is empty
+**API routes**
 
-**Database & Persistence**
-- **Supabase PostgreSQL**: User profiles, discussions, messages, formatted chunk cache — all with RLS
-- **Pinecone**: Vector embeddings for semantic search (1536-dim cosine)
-- **Disk Registry**: `backend/data/document_registry.json` for document metadata persistence across restarts
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/chat/stream` | SSE intake conversation (drives tools → Hive) |
+| `GET` | `/api/discussions` | List the user's discussions |
+| `POST` | `/api/discussions` | Create a discussion |
+| `GET` | `/api/discussions/{id}` | Get a discussion with messages |
+| `PUT` | `/api/discussions/{id}` | Update title / active / intent |
+| `DELETE` | `/api/discussions/{id}` | Delete a discussion |
+| `POST` | `/api/discussions/{id}/attachments` | Upload a reference attachment |
+| `GET` | `/api/discussions/{id}/attachments` | List attachments |
+| `DELETE` | `/api/discussions/{id}/attachments/{att_id}` | Delete an attachment |
+| `POST` | `/api/hive/submit` | Direct Hive submission proxy |
+| `GET` | `/health` | Health check (reports Claude config status) |
 
-**Authentication**
-- Supabase Auth with JWT verification (ES256/RS256/EdDSA via JWKS endpoint; HS256 fallback for legacy tokens)
-- `get_current_user_id()` FastAPI dependency injection on all protected endpoints
-- Email confirmation handling via URL hash in frontend
-
-**AI Providers** (auto-registered at module load via `ProviderRegistry`)
-- **Claude** (`claude-sonnet-4-5-20250929`) — Anthropic SDK, async streaming, vision support
-- **Mistral** (`mistral-large-latest`) — async streaming, vision support, fast query rewriting
-- **OpenAI** — AsyncOpenAI used exclusively for `text-embedding-3-small` embeddings; not a chat provider
-
-**Services** (singleton pattern via `get_*_service()`)
-- **DiscussionService**: Supabase-backed CRUD for discussions and messages
-- **DocumentService**: Document extraction, token-aware chunking, Pinecone batch embedding, instructor index
-- **AttachmentService**: In-memory conversation-scoped file storage; reuses DocumentService text extraction
-- **PineconeService**: Vector DB client with lazy initialization and batch upsert
-- **IntentClassifier**: Regex-based intent detection, 11 intents + generalist fallback, zero-latency
-
-**Intent Classification** (11 intents + generalist fallback)
-
-| Intent | Label | Preferred Provider |
-|--------|-------|--------------------|
-| `continuation` | Continuing Response | inherited |
-| `summarize` | Summary | Mistral |
-| `explain` | Explainer | Claude |
-| `compare` | Comparison | Mistral |
-| `builder` | Builder | Claude |
-| `find_readings` | Find Readings | Mistral |
-| `case_analysis` | Case Analysis | Claude |
-| `generate_questions` | Assessment | Claude |
-| `critique` | Critique | Claude |
-| `methodology` | Methodology | Claude |
-| `lesson_plan` | Lesson Plan | Mistral |
-| `generalist` | Generalist (fallback) | Mistral |
-
-**RAG Pipeline** (4-stage)
-1. **Query Embedding**: User query → text-embedding-3-small → 1536-dim vector
-2. **Pinecone Search**: Query vector → top-k chunks (k controlled by research mode)
-3. **Entity Boost**: Extract person names via n-gram → match instructor index → tiered score boost (+0.30 / +0.15 / +0.05)
-4. **Context Assembly**: Number sources → format as `[Source N - filename]\n...` → inject into system prompt; attachments prepended as `[Attached File: filename]\n...`
-
-**Text Processing**
-- **Extraction**: PyPDF (PDFs), python-docx (DOCX), direct read (TXT/MD)
-- **Chunking**: Token-aware (cl100k_base), 500 tokens/chunk, 50 token overlap
-- **Algorithm**: Paragraph detection → type classification → accumulate to budget → sentence-level fallback
-- **Embedding**: Batch upsert to Pinecone with document_id + chunk_index metadata
-
-**Streaming Pipeline**
-- SSE events emitted in order: `discussion_title` → `sources` → `intent` → `chunk` (repeated) → `done` → `suggested_questions`
-- Continuation detection: if prior assistant message is marked `is_truncated`, rewrites query to resume from exact cut-off
-- Stale citation sanitization: strips `[N]` markers from prior messages before sending to model (prevents hallucinated re-citations)
-- Post-processing: removes contradictory `[N][AI]` co-occurrences from Mistral output via `re.sub`
-- **Suggested questions fallback**: if Mistral returns 429 (capacity exceeded), falls back to Claude Haiku for question generation
-- **Pipeline timing logs**: `[PIPELINE]` print statements (stdout, unbuffered) log stage durations to `logs/backend.log` for latency diagnosis
-
-**API Routes**
-- `POST /api/chat/stream` — SSE streaming chat
-- `GET /api/chat/providers` — List configured providers
-- `GET /api/discussions` — List user's discussions
-- `POST /api/discussions` — Create discussion
-- `GET /api/discussions/{id}` — Get discussion with messages
-- `PUT /api/discussions/{id}` — Update title / active / public status
-- `DELETE /api/discussions/{id}` — Delete discussion
-- `DELETE /api/discussions` — Delete all user's discussions
-- `POST /api/documents/upload` — Upload and embed document
-- `GET /api/documents` — List all documents
-- `GET /api/documents/{id}` — Get document metadata
-- `DELETE /api/documents/{id}` — Delete document + Pinecone vectors
-- `POST /api/discussions/{id}/attachments` — Upload attachment
-- `GET /api/discussions/{id}/attachments` — List attachments
-- `GET /api/discussions/{id}/attachments/{att_id}` — Get attachment detail
-- `DELETE /api/discussions/{id}/attachments/{att_id}` — Delete attachment
-- `GET /api/research/modes` — List research modes
-- `GET /health` — Health check with provider status
-
----
-
-### Frontend (React 19 + TypeScript + Vite 7)
-
-**Framework & Build**
-- React 19 + TypeScript 5.x
-- Vite 7 (HMR, fast bundling)
-- React Router 7 for client-side routing
-- CSS Modules + Tailwind CSS
-
-**Routes**
-- `/` — Redirects to `/chat`
-- `/chat` — New chat (no active discussion)
-- `/chat/:discussionId` — Specific discussion
-- `/share/:discussionId` — Public shared discussion (auth-gated redirect flow)
-
-**State Management (Zustand)**
-- **useAuthStore** — User auth, session, Supabase integration
-- **useDiscussionStore** — Discussion CRUD, active discussion; URL param is source of truth for active ID
-- **useChatStore** — Messages, streaming state, chunk buffer, hover placeholder, truncation flag
-- **useProviderStore** — Provider selection (persisted to localStorage)
-- **useDocumentStore** — Document upload, list, selection
-- **useAttachmentStore** — Discussion-scoped attachment upload and preview
-- **useResearchModeStore** — Research mode selection (persisted to localStorage)
-- **previewStore** — Document preview open/close, highlighted chunk ID, formatted content cache
-
-**Services**
-- **ApiService** (`api.ts`) — Singleton fetch wrapper with Supabase Bearer token injection
-- **SSEClient** (`sse.ts`) — Async generator SSE parser; yields typed events; supports AbortSignal
-- **Supabase Client** (`supabase.ts`) — `@supabase/supabase-js` singleton
-- **Voice Service** (`voice.ts`) — Web Speech API wrapper
-- **PDF Export** (`pdfExport.ts`) — `exportDocumentToPDF()` for chat; `exportHistoryToPDF()` for history list; `exportDocumentToDocx()` for DOCX export
-
-**Custom Hooks**
-- **useSSE** — Orchestrates send flow: create discussion → add user message → start SSE → handle events → finalize
-- **useChunkBuffer** — Debounces streaming text updates for optimal React rendering
-- **useVoice** — Speech-to-text with start/stop/transcript
-
-**Key Components**
-- **ChatArea** — Main chat container; empty state with quick-action chips + submenus; continuous rAF scroll loop during streaming (60fps), smooth scrollIntoView on completion
-- **ThinkingIndicator** — Animated loading state shown while waiting for the first streamed chunk; displays provider name
-- **ChatMessage** — Message with role, timestamp, provider badge, token/latency metrics, Continue On chip
-- **ChatInput** — Textarea with voice, attachments, provider selector, research mode; hover placeholder from store
-- **SourcesDisplay** — Tabbed source view (Grid / Chat / References) with clickable `[N]` citation chips
-- **InlineCitation** — Hover tooltip with filename, relevance %, "Explore ↗" CTA; click opens document preview
-- **DocumentPreviewPane** — Full-text document panel with chunk navigation and highlighted retrieved section
-- **AttachmentPanel** — List and preview conversation-scoped attachments
-- **AuthModal** — Sign up / sign in with avatar picker, display name, preferred name, email confirmation flow
-- **Sidebar** — Discussion list, new chat, 3-dot menu (export history, delete all), collapsible with drag-handle cursor cue
-- **ProviderToggles** — Desktop toggle buttons; mobile modal selector
-- **ResearchModeSelector** — Focused / Broad / Exploratory mode picker with descriptions
-- **ChatMessage** — Fade + slide-up entrance animation (`chatMessageIn` keyframe) on each new message render
+### Frontend (React + TypeScript + Vite)
+- React + TypeScript, Vite, React Router, Zustand
+- **Feature folders** (`frontend/src/features/`): `chat`, `discussions`, `auth`, `attachments` — each with a Zustand `store.ts` and components
+- **Shared services** (`frontend/src/shared/services/`): `api.ts` (fetch wrapper with Supabase bearer token), `sse.ts` (async-generator SSE client), `supabase.ts`, `voice.ts`, `pdfExport.ts`, `docxExport.ts`
+- **Hooks** (`frontend/src/shared/hooks/`): `useSSE` (send orchestration), `useVoice`
+- **Routes**: `/` → `/chat`, `/chat`, `/chat/:discussionId`
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Version |
-|-------|------------|---------|
-| **Frontend** | React | 19 |
-| | TypeScript | 5.x |
-| | Vite | 7 |
-| | React Router | 7 |
-| | Zustand | 5.x |
-| | Tailwind CSS | 3.x |
-| | Lucide React | 0.562.0 |
-| | jsPDF + html2canvas | 4.x / 1.x |
-| **Backend** | Python | 3.11+ |
-| | FastAPI | Latest |
-| | uvicorn | Latest |
-| | sse-starlette | Latest |
-| **Database** | Supabase (PostgreSQL) | Latest |
-| | Pinecone | Latest |
-| **AI Providers** | Anthropic SDK | Latest |
-| | Mistral SDK | ≥1.0.0, <2.0.0 |
-| | OpenAI SDK | Latest (embeddings only) |
-| **Document Processing** | PyPDF | Latest |
-| | python-docx | Latest |
-| | tiktoken | Latest |
-| **Authentication** | Supabase Auth | Latest |
-| | PyJWT | Latest |
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | React, TypeScript, Vite, React Router, Zustand, plain CSS (CSS variables / CSS Modules), Lucide, jsPDF/html2canvas, docx/file-saver |
+| **Backend** | Python 3.11+, FastAPI, uvicorn, sse-starlette |
+| **AI** | Anthropic SDK (Claude, primary + tool use), Mistral SDK (fallback) |
+| **Database / Auth** | Supabase (PostgreSQL + RLS, JWT), PyJWT |
+| **Integrations** | Hive API (task creation), Resend (email) |
+| **Document parsing** | pypdf, python-docx |
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-
 - **Python 3.11+**
 - **Node.js 18+**
 - **Supabase account** (auth + database)
-- **Pinecone account** (vector search)
-- **API keys**: Anthropic and Mistral (chat); OpenAI (embeddings — required)
-
----
+- **Anthropic API key** (required — primary provider)
+- **Hive API credentials** (to actually file requests; without them, submissions return a synthetic task ID and still email a copy)
+- Optional: **Mistral API key** (overload fallback), **Resend API key** (email copies)
 
 ### Quick Start (Automated)
 
 ```bash
-# Start both backend and frontend
-./start.sh
-
-# Stop all services
-./stop.sh
+./start.sh   # starts backend (:8000) and frontend (:5173)
+./stop.sh    # stops both
 ```
 
-**What `start.sh` does:**
-- Creates Python virtual environment (if not exists) and installs backend dependencies
-- Starts backend at `http://localhost:8000` with `PYTHONUNBUFFERED=1` (ensures `[PIPELINE]` log lines appear immediately in `logs/backend.log`)
-- Installs frontend npm deps and starts Vite dev server at `http://localhost:5173`
-- Logs to `logs/backend.log` and `logs/frontend.log`
-- Stores PIDs in `.pids/` for clean shutdown
-
----
+`start.sh` creates the Python venv and installs dependencies, starts the backend with `PYTHONUNBUFFERED=1`, installs frontend deps, starts Vite, logs to `logs/`, and stores PIDs in `.pids/`.
 
 ### Manual Setup
 
-#### 1. Backend Setup
-
+**Backend**
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env
+cp .env.example .env              # then edit — see Environment Variables
+uvicorn app.main:app --reload     # API: http://localhost:8000  ·  docs: /docs
 ```
 
-Edit `backend/.env` — see [Environment Variables](#environment-variables) below.
+Initialize the database by pasting `backend/supabase_schema.sql` into the Supabase SQL Editor and running it. This creates `profiles`, `discussions`, and `messages` with RLS policies and the signup trigger.
 
-**Initialize Supabase database:**
-
-```bash
-# Paste contents of backend/supabase_schema.sql into Supabase SQL Editor and execute.
-# Creates: profiles, discussions, messages, document_formatted_chunks tables + RLS policies + trigger
-```
-
-**Start backend:**
-
-```bash
-uvicorn app.main:app --reload
-# API: http://localhost:8000
-# Docs: http://localhost:8000/docs
-```
-
----
-
-#### 2. Frontend Setup
-
+**Frontend**
 ```bash
 cd frontend
 npm install
-cp .env.example .env
+cp .env.example .env              # then edit
+npm run dev                       # App: http://localhost:5173
 ```
-
-Edit `frontend/.env`:
-
-```env
-VITE_API_URL=http://localhost:8000
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-```bash
-npm run dev
-# App: http://localhost:5173
-```
-
----
-
-#### 3. Supabase Setup
-
-1. Create project at https://supabase.com/dashboard
-2. Get credentials: **Project Settings → API**
-   - Project URL → `SUPABASE_URL`
-   - `anon public` key → `SUPABASE_KEY` + `VITE_SUPABASE_ANON_KEY`
-   - `service_role` key → `SUPABASE_SERVICE_ROLE_KEY`
-   - **Settings → API → JWT Settings → JWT Secret** → `SUPABASE_JWT_SECRET` (required)
-3. Run `backend/supabase_schema.sql` in SQL Editor
-4. Enable Email Auth: **Authentication → Providers → Email**
-
----
-
-#### 4. Pinecone Setup
-
-1. Create account at https://www.pinecone.io/
-2. Create index:
-   - Name: `qodex-documents` (or custom via `PINECONE_INDEX_NAME`)
-   - Dimensions: **1536**
-   - Metric: **Cosine**
-   - Spec: Serverless (AWS us-east-1 recommended)
-3. Copy API key → `PINECONE_API_KEY`
 
 ---
 
@@ -360,22 +204,25 @@ npm run dev
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-SUPABASE_JWT_SECRET=your-jwt-secret
+SUPABASE_JWT_SECRET=your-jwt-secret           # Dashboard → Settings → API → JWT Secret
 
-# AI Providers
+# Anthropic (primary provider — required)
 ANTHROPIC_API_KEY=sk-ant-...
-MISTRAL_API_KEY=...
-OPENAI_API_KEY=sk-...          # Required for embeddings (text-embedding-3-small)
+ANTHROPIC_MODEL=claude-sonnet-4-6             # optional override
 
-# AI Model Overrides (optional — defaults shown)
-ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
+# Hive integration
+HIVE_API_KEY=...
+HIVE_USER_ID=...
+HIVE_WORKSPACE_ID=...                          # optional; service has a default
+HIVE_UAT_PROJECT_ID=...                        # optional; routes all submissions to one test project
+
+# Mistral (optional — overload fallback)
+MISTRAL_API_KEY=...
 MISTRAL_MODEL=mistral-large-latest
 
-# Pinecone
-PINECONE_API_KEY=...
-PINECONE_INDEX_NAME=qodex-documents
-PINECONE_ENVIRONMENT=us-east-1
-PINECONE_HOST=...              # Optional — uses index name if omitted
+# Email copies (optional — Resend)
+RESEND_API_KEY=...
+EMAIL_CC_ADDRESS=team@example.com
 
 # Application
 CORS_ORIGINS=http://localhost:5173,http://localhost:3000
@@ -393,210 +240,68 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 ---
 
+## Database Schema (Supabase)
+
+Run `backend/supabase_schema.sql` in the Supabase SQL Editor.
+
+- **`profiles`** — `id` (FK `auth.users` ON DELETE CASCADE), `email`, `display_name`, `created_at`. Auto-created on signup. RLS: users read/update their own profile.
+- **`discussions`** — `id`, `user_id` (FK `profiles`), `title` (default `'New Chat'`), `is_active`, `intent`, `created_at`, `updated_at`. RLS: owner full CRUD.
+- **`messages`** — `id`, `discussion_id` (FK `discussions` ON DELETE CASCADE), `role` (user/assistant/system), `content`, `tokens_used`, `response_time_ms`, `intent`, `user_display_name`, `user_email`, `created_at`. RLS: scoped to discussion ownership.
+
+**Trigger:** `on_auth_user_created` auto-creates a `profiles` row on signup.
+
+> `backend/migrations/` contains older SQL (`document_formatted_chunks`, `research_mode`) from the previous RAG product. These tables are **not used** by Cowork.
+
+---
+
 ## Project Structure
 
 ```
-Qodex/
+.
 ├── backend/
 │   ├── app/
 │   │   ├── api/routes/
-│   │   │   ├── chat.py              # SSE streaming endpoint
-│   │   │   ├── discussions.py       # Discussion CRUD
-│   │   │   ├── documents.py         # Document upload/preview
-│   │   │   └── attachments.py       # Attachment management
-│   │   ├── auth/
-│   │   │   └── dependencies.py      # JWT verification (Supabase JWKS)
+│   │   │   ├── chat.py            # SSE intake endpoint (tool use → Hive)
+│   │   │   ├── discussions.py     # Discussion CRUD
+│   │   │   ├── attachments.py     # Reference attachment upload/list/delete
+│   │   │   └── hive.py            # Hive submission proxy
+│   │   ├── auth/                  # Supabase JWT verification + get_current_user
 │   │   ├── core/
-│   │   │   ├── config.py            # Pydantic settings + env vars
-│   │   │   └── research_modes.py    # Research mode definitions
-│   │   ├── database/
-│   │   │   └── supabase_client.py
-│   │   ├── models/
-│   │   │   ├── discussion.py
-│   │   │   ├── message.py           # DocumentSource, MessageRole, Message
-│   │   │   ├── document.py
-│   │   │   └── attachment.py
-│   │   ├── providers/
-│   │   │   ├── __init__.py          # ProviderRegistry
-│   │   │   ├── base.py              # BaseProvider abstract
-│   │   │   ├── claude_provider.py   # Anthropic streaming + vision
-│   │   │   └── mistral_provider.py  # Mistral streaming + vision
+│   │   │   ├── config.py          # Pydantic settings / env vars
+│   │   │   └── tools.py           # Claude tool defs: show_checklist, submit_to_hive
+│   │   ├── database/              # Supabase client
+│   │   ├── models/                # discussion.py, message.py (Pydantic)
+│   │   ├── providers/             # claude_provider.py, mistral_provider.py
 │   │   ├── services/
 │   │   │   ├── discussion_service.py
-│   │   │   ├── document_service.py  # Extraction, chunking, Pinecone indexing
+│   │   │   ├── hive_service.py    # Hive API client + sub-project routing
+│   │   │   ├── email_service.py   # Resend submission copy
 │   │   │   ├── attachment_service.py
-│   │   │   ├── pinecone_service.py
 │   │   │   └── intent_classifier.py
-│   │   └── main.py                  # FastAPI app + lifespan
-│   ├── data/
-│   │   └── document_registry.json   # Persisted document metadata
+│   │   └── main.py                # FastAPI app + lifespan
 │   ├── requirements.txt
-│   ├── .env
-│   ├── .env.example
-│   └── supabase_schema.sql          # Run once in Supabase SQL Editor
+│   └── supabase_schema.sql        # Run once in Supabase SQL Editor
 ├── frontend/
 │   ├── src/
-│   │   ├── app/
-│   │   │   └── App.tsx              # Main routing + auth gate
-│   │   ├── components/layout/
-│   │   │   ├── Sidebar.tsx          # Discussion list, export, collapsible
-│   │   │   └── NestedQuestionItem.tsx
-│   │   ├── features/
-│   │   │   ├── auth/                # AuthModal, useAuthStore
-│   │   │   ├── chat/                # ChatArea, ChatMessage, ChatInput, SourcesDisplay, InlineCitation
-│   │   │   ├── discussions/         # useDiscussionStore
-│   │   │   ├── documents/           # useDocumentStore, previewStore, DocumentPreviewPane
-│   │   │   ├── attachments/         # useAttachmentStore, AttachmentPanel
-│   │   │   ├── providers/           # ProviderToggles, useProviderStore
-│   │   │   └── research/            # ResearchModeSelector, useResearchModeStore
-│   │   └── shared/
-│   │       ├── services/
-│   │       │   ├── api.ts           # ApiService singleton
-│   │       │   ├── sse.ts           # SSE async generator client
-│   │       │   ├── supabase.ts      # Supabase JS singleton
-│   │       │   ├── voice.ts         # Web Speech API
-│   │       │   └── pdfExport.ts     # exportDocumentToPDF + exportHistoryToPDF
-│   │       ├── hooks/
-│   │       │   ├── useSSE.ts        # Message send orchestration
-│   │       │   ├── useChunkBuffer.ts
-│   │       │   └── useVoice.ts
-│   │       └── types/index.ts       # All TypeScript types
+│   │   ├── app/                   # App.tsx — routing + auth gate
+│   │   ├── components/            # ui/ and layout/ shared components
+│   │   ├── features/              # chat, discussions, auth, attachments (each with store.ts)
+│   │   └── shared/                # services/, hooks/, types/, utils/
 │   ├── package.json
-│   ├── vite.config.ts
-│   └── .env.example
-├── start.sh
-├── stop.sh
-└── render.yaml                      # Render.com deployment blueprint
+│   └── vite.config.ts
+├── start.sh / stop.sh / status.sh / logs.sh
+└── render.yaml                    # Render deployment blueprint
 ```
 
 ---
 
-## Database Schema (Supabase)
+## Deployment (Render)
 
-Run `backend/supabase_schema.sql` in your Supabase SQL Editor.
+A `render.yaml` blueprint defines a Python web service (backend) and a static site (frontend).
 
-**Tables:**
-
-1. **profiles** — Auto-created on signup via trigger
-   - `id` (UUID, FK auth.users ON DELETE CASCADE), `email`, `display_name`, `created_at`
-   - RLS: users can read and update their own profile
-
-2. **discussions**
-   - `id`, `user_id` (FK profiles), `title` (default `'New Chat'`), `is_active`, `is_public`, `created_at`, `updated_at`
-   - `is_public`: enables shareable links via `/share/:id`
-   - RLS: owner full CRUD; any authenticated user can read public discussions
-
-3. **messages**
-   - `id`, `discussion_id` (FK discussions ON DELETE CASCADE)
-   - `role` (CHECK: user/assistant/system), `content`, `provider`
-   - `tokens_used`, `response_time_ms`
-   - `sources`, `citations`, `suggested_questions` (JSONB)
-   - `intent`, `research_mode`, `created_at`
-   - `user_display_name`, `user_email` — snapshot of sender identity at message creation time
-   - RLS: mirrors discussion ownership; public discussion messages readable by any authenticated user
-
-4. **document_formatted_chunks** — L2 format cache
-   - `id`, `document_id`, `chunk_id`, `formatted_content`, `created_at`
-   - Unique on `(document_id, chunk_id)` — persists AI-formatted chunk previews for instant document opens
-
-**Trigger:**
-- `on_auth_user_created` — auto-creates profile row on Supabase auth signup
-
----
-
-## Deployment
-
-### Render (Recommended)
-
-Qodex ships with a `render.yaml` blueprint for one-click deployment:
-
-1. Push to GitHub
-2. Connect repo to Render → Create Blueprint from `render.yaml`
-3. Set environment variables in Render Dashboard (backend and frontend services)
-4. Deploy — Render auto-deploys on every `git push`
-
-**Services:**
-- **Backend**: Python web service — `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- **Frontend**: Static site — `npm run build`, serves `dist/`, SPA fallback `/* → /index.html`
-
-### Manual (Production)
-
-```bash
-# Backend
-cd backend && pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-
-# Frontend
-cd frontend && npm install && npm run build
-# Serve dist/ with nginx/caddy/apache
-```
-
----
-
-## Development
-
-### Adding a New AI Provider
-
-1. Create `backend/app/providers/new_provider.py` extending `BaseProvider`:
-   ```python
-   from .base import BaseProvider
-   from typing import AsyncGenerator
-
-   class NewProvider(BaseProvider):
-       async def stream_completion(self, messages, context="", temperature=0.7,
-                                   max_tokens=2000, intent_prompt="", research_prompt=""
-                                   ) -> AsyncGenerator[str, None]:
-           yield chunk
-   ```
-
-2. Register at module level (providers auto-register on import):
-   ```python
-   from app.providers import registry
-   registry.register("new_provider", NewProvider, "Display Name", "model-name")
-   ```
-
-3. Add API key to `backend/app/core/config.py` and `backend/.env`
-
-### File Conventions
-
-| Location | Convention |
-|----------|-----------|
-| `backend/app/models/` | Pydantic `BaseModel` with `__init__.py` re-exports |
-| `backend/app/services/` | Singleton pattern via `get_*_service()` getter |
-| `frontend/src/features/<name>/` | Feature folder; export public API via `index.ts` |
-| `frontend/src/shared/types/index.ts` | All TypeScript types centralized here |
-| Zustand stores | `interface State` + `interface Actions` pattern |
-| `frontend/src/shared/services/` | API and external service integrations |
-
----
-
-## Troubleshooting
-
-**Backend won't start**
-- Verify Python 3.11+: `python --version`
-- Activate venv: `source venv/bin/activate`
-- Check all required `.env` keys are present
-- Verify Supabase URL/keys and Pinecone API key
-
-**Frontend won't start**
-- Verify Node 18+: `node --version`
-- Delete `node_modules` + `package-lock.json` and re-run `npm install`
-- Confirm `VITE_API_URL` and Supabase vars are set in `frontend/.env`
-
-**Authentication not working**
-- `SUPABASE_JWT_SECRET` must be set in `backend/.env` (Dashboard → Settings → API → JWT Secret)
-- Confirm `supabase_schema.sql` was executed in the SQL Editor
-- Check email confirmation settings in Supabase Dashboard
-
-**RAG not returning results**
-- Verify Pinecone index exists with name matching `PINECONE_INDEX_NAME` and dimension 1536
-- Confirm documents were uploaded successfully; check `backend/data/document_registry.json`
-- Try switching to Exploratory research mode for a broader score threshold (≥ 0.25)
-
-**Streaming not working**
-- Verify Anthropic and Mistral API keys are valid and have sufficient quota
-- Check CORS: `CORS_ORIGINS` in backend `.env` must include the frontend origin
-- Check browser console for SSE connection errors
+1. Push to GitHub and create a Blueprint from `render.yaml` in Render.
+2. Set environment variables (see above) in the Render dashboard for each service.
+3. Render auto-deploys on every push.
 
 ---
 
@@ -604,7 +309,7 @@ cd frontend && npm install && npm run build
 
 Copyright (c) 2026 Aleksey Przhevalskiy and Tamer Institute for Social Enterprise and Climate Change. All rights reserved.
 
-Licensed under the [Business Source License 1.1](LICENSE). Production use requires a commercial license from the Licensor. The Licensed Work will convert to MIT License on 2029-03-24.
+Licensed under the [Business Source License 1.1](LICENSE). Production use requires a commercial license from the Licensor. The Licensed Work converts to the MIT License on 2029-03-24.
 
 For commercial licensing inquiries, contact: przalex2@gmail.com
 
@@ -612,9 +317,9 @@ For commercial licensing inquiries, contact: przalex2@gmail.com
 
 ## Acknowledgments
 
-- Anthropic for Claude models
-- Mistral AI for Mistral models
-- OpenAI for embedding API (text-embedding-3-small)
-- Pinecone for vector database
-- Supabase for authentication and PostgreSQL
+- Anthropic — Claude (primary provider, tool use)
+- Mistral AI — Mistral (fallback provider)
+- Supabase — authentication and PostgreSQL
+- Hive — task management API
+- Resend — transactional email
 - FastAPI and React communities

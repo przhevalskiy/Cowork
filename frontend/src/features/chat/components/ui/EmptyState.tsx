@@ -4,8 +4,8 @@ export function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center flex-1 px-4 py-12">
       {/* Logo */}
-      <div className="flex items-center justify-center w-16 h-16 mb-6 rounded-2xl bg-qodex-100">
-        <Zap size={32} className="text-qodex-600" />
+      <div className="flex items-center justify-center w-16 h-16 mb-6 rounded-2xl bg-brand-100">
+        <Zap size={32} className="text-brand-600" />
       </div>
 
       {/* Greeting */}

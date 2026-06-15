@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Qodex - Stop All Services
+# Cowork - Stop All Services
 # This script stops the backend and frontend services
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}"
 echo "╔═══════════════════════════════════════╗"
-echo "║         Qodex - Stopping Services     ║"
+echo "║         Cowork - Stopping Services    ║"
 echo "╚═══════════════════════════════════════╝"
 echo -e "${NC}"
 
@@ -105,7 +105,7 @@ fi
 echo ""
 if $STOPPED_SOMETHING; then
     echo -e "${GREEN}╔═══════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║     All Qodex services stopped        ║${NC}"
+    echo -e "${GREEN}║     All Cowork services stopped       ║${NC}"
     echo -e "${GREEN}╚═══════════════════════════════════════╝${NC}"
 else
     echo -e "${YELLOW}No running services found${NC}"

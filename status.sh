@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Qodex - Service Status Check
+# Cowork - Service Status Check
 # Shows running state of backend and frontend, and pings the health endpoint
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,7 +15,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}"
 echo "╔═══════════════════════════════════════╗"
-echo "║         Qodex - Service Status        ║"
+echo "║         Cowork - Service Status       ║"
 echo "╚═══════════════════════════════════════╝"
 echo -e "${NC}"
 

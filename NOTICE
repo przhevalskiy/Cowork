@@ -1,4 +1,4 @@
-Qodex
+Cowork
 Copyright (c) 2026 Aleksey Przhevalskiy and
 Tamer Institute for Social Enterprise and Climate Change.
 All rights reserved.
@@ -19,12 +19,11 @@ This software incorporates components from the following open-source projects:
 - Supabase JS (MIT) — https://github.com/supabase/supabase-js
 - Anthropic Python SDK (MIT) — https://github.com/anthropics/anthropic-sdk-python
 - Mistral Python SDK (Apache 2.0) — https://github.com/mistralai/client-python
-- OpenAI Python SDK (Apache 2.0) — https://github.com/openai/openai-python
-- Pinecone Python SDK (Apache 2.0) — https://github.com/pinecone-io/pinecone-python-client
 - sse-starlette (BSD) — https://github.com/sysid/sse-starlette
 - jsPDF (MIT) — https://github.com/parallax/jsPDF
 - react-markdown (MIT) — https://github.com/remarkjs/react-markdown
 - Lucide React (ISC) — https://github.com/lucide-icons/lucide
 - Pydantic (MIT) — https://github.com/pydantic/pydantic
 - PyPDF (BSD) — https://github.com/py-pdf/pypdf
-- tiktoken (MIT) — https://github.com/openai/tiktoken
+- python-docx (MIT) — https://github.com/python-openxml/python-docx
+- Resend Python SDK (MIT) — https://github.com/resend/resend-python

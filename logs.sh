@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Qodex - Tail Logs
+# Cowork - Tail Logs
 # Streams backend and frontend logs side by side in real time
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,7 +16,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}"
 echo "╔═══════════════════════════════════════╗"
-echo "║         Qodex - Live Logs             ║"
+echo "║         Cowork - Live Logs            ║"
 echo "╚═══════════════════════════════════════╝"
 echo -e "${NC}"
 echo -e "  ${GREEN}[BACKEND]${NC}  backend log output"

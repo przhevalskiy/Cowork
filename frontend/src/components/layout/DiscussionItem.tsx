@@ -38,14 +38,14 @@ export function DiscussionItem({
       <div
         className={`group flex cursor-pointer items-center gap-3 mx-2 px-3 py-2.5 rounded-lg transition-all duration-150 ${
           isActive
-            ? 'bg-qodex-50 text-qodex-700 border border-qodex-200'
+            ? 'bg-brand-50 text-brand-700 border border-brand-200'
             : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary border border-transparent'
         }`}
         onClick={onActivate}
       >
         <MessageSquare
           size={18}
-          className={`flex-shrink-0 ${isActive ? 'text-qodex-600' : 'text-text-tertiary'}`}
+          className={`flex-shrink-0 ${isActive ? 'text-brand-600' : 'text-text-tertiary'}`}
         />
         <span className="flex-1 truncate text-sm font-medium">{discussion.title}</span>
 
@@ -58,7 +58,7 @@ export function DiscussionItem({
               <button
                 className={`rounded-md p-1.5 transition-colors ${
                   isActive
-                    ? 'hover:bg-qodex-100 text-qodex-600'
+                    ? 'hover:bg-brand-100 text-brand-600'
                     : 'hover:bg-bg-hover text-text-tertiary hover:text-text-primary'
                 }`}
               >

@@ -9,7 +9,7 @@ export function SidebarHeader({ isCollapsed, onToggleCollapse }: SidebarHeaderPr
   return (
     <div className="flex items-center justify-between h-16 px-4 border-b border-border-light">
       <div className="flex items-center gap-2">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-qodex-600">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-600">
           <Zap size={18} className="text-white" />
         </div>
         {!isCollapsed && (

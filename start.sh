@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Qodex - Start All Services
+# Cowork - Start All Services
 # This script starts the backend and frontend services
 
 set -e
@@ -19,7 +19,7 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}"
 echo "╔═══════════════════════════════════════╗"
-echo "║         Qodex - Starting Services     ║"
+echo "║         Cowork - Starting Services    ║"
 echo "╚═══════════════════════════════════════╝"
 echo -e "${NC}"
 
@@ -132,7 +132,7 @@ fi
 echo ""
 if $BACKEND_RUNNING && $FRONTEND_RUNNING; then
     echo -e "${GREEN}╔═══════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║     Qodex is ready!                   ║${NC}"
+    echo -e "${GREEN}║     Cowork is ready!                  ║${NC}"
     echo -e "${GREEN}║                                       ║${NC}"
     echo -e "${GREEN}║     Frontend: http://localhost:5173   ║${NC}"
     echo -e "${GREEN}║     Backend:  http://localhost:8000   ║${NC}"

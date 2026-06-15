@@ -94,7 +94,7 @@
 }
 
 .attachment-panel-item-icon {
-  color: var(--qodex-primary);
+  color: var(--brand-600);
   flex-shrink: 0;
 }
 
@@ -170,9 +170,9 @@
 }
 
 .attachment-panel-dropzone.dragging {
-  border-color: var(--qodex-primary);
+  border-color: var(--brand-600);
   background: rgba(99, 102, 241, 0.1);
-  color: var(--qodex-primary);
+  color: var(--brand-600);
 }
 
 .attachment-panel-progress {
@@ -188,7 +188,7 @@
 
 .attachment-panel-progress-fill {
   height: 100%;
-  background: var(--qodex-primary);
+  background: var(--brand-600);
   border-radius: 2px;
   transition: width 0.3s ease;
 }

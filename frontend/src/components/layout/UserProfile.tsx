@@ -24,8 +24,8 @@ export function UserProfile({ isCollapsed }: UserProfileProps) {
     return (
       <div className="p-3 border-t border-border-light">
         <button className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-bg-tertiary transition-colors">
-          <div className="w-8 h-8 rounded-full bg-qodex-100 flex items-center justify-center">
-            <User size={16} className="text-qodex-600" />
+          <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center">
+            <User size={16} className="text-brand-600" />
           </div>
         </button>
       </div>
@@ -37,8 +37,8 @@ export function UserProfile({ isCollapsed }: UserProfileProps) {
       <Dropdown
         trigger={
           <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-bg-tertiary transition-colors">
-            <div className="w-9 h-9 rounded-full bg-qodex-100 flex items-center justify-center flex-shrink-0">
-              <User size={18} className="text-qodex-600" />
+            <div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
+              <User size={18} className="text-brand-600" />
             </div>
             <div className="flex-1 text-left min-w-0">
               <div className="text-sm font-medium text-text-primary truncate">

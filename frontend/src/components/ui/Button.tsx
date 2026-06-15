@@ -15,7 +15,7 @@ interface ButtonProps {
 }
 
 const variantClasses = {
-  primary: 'bg-qodex-primary text-white hover:bg-qodex-hover active:bg-qodex-primary disabled:bg-bg-tertiary disabled:text-text-tertiary',
+  primary: 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-600 disabled:bg-bg-tertiary disabled:text-text-tertiary',
   secondary: 'bg-bg-secondary text-text-primary border border-border-light hover:bg-bg-tertiary active:bg-bg-secondary',
   ghost: 'bg-transparent text-text-secondary hover:bg-bg-secondary hover:text-text-primary',
   danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-500 disabled:bg-bg-tertiary disabled:text-text-tertiary',
@@ -47,7 +47,7 @@ export function Button({
       disabled={disabled || loading}
       className={`
         inline-flex items-center justify-center font-medium rounded-xl transition-all
-        focus:outline-none focus:ring-2 focus:ring-qodex-primary focus:ring-offset-2
+        focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2
         disabled:cursor-not-allowed active:scale-[0.98]
         ${variantClasses[variant]}
         ${sizeClasses[size]}

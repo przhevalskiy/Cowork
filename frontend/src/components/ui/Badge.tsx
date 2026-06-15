@@ -9,7 +9,7 @@ interface BadgeProps {
 
 const variantClasses = {
   default: 'bg-slate-100 text-slate-700',
-  primary: 'bg-qodex-light text-qodex-primary',
+  primary: 'bg-brand-50 text-brand-600',
   success: 'bg-emerald-100 text-emerald-700',
   warning: 'bg-amber-100 text-amber-700',
   error: 'bg-red-100 text-red-700',
@@ -18,7 +18,7 @@ const variantClasses = {
 
 const dotVariantClasses = {
   default: 'bg-slate-500',
-  primary: 'bg-qodex-primary',
+  primary: 'bg-brand-600',
   success: 'bg-emerald-500',
   warning: 'bg-amber-500',
   error: 'bg-red-500',

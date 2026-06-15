@@ -75,7 +75,7 @@ def check_rls(supabase):
 
 def main():
     print("=" * 52)
-    print("  Qodex — Supabase Connection & Schema Test")
+    print("  Cowork — Supabase Connection & Schema Test")
     print("=" * 52)
 
     env_ok = check_env()

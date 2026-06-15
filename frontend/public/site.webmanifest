@@ -1,7 +1,7 @@
 {
-  "name": "Qodex",
-  "short_name": "Qodex",
-  "description": "AI-powered educational resource platform",
+  "name": "Cowork",
+  "short_name": "Cowork",
+  "description": "Marketing & Communications intake assistant",
   "icons": [
     {
       "src": "/favicon-192x192.png",

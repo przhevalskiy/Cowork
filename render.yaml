@@ -1,11 +1,11 @@
 # Render Blueprint - Infrastructure as Code
-# This file defines all services for the Qodex application
+# This file defines all services for the Cowork application
 # Deploy: Connect GitHub repo to Render, it auto-detects this file
 
 services:
   # Backend - FastAPI Python Service
   - type: web
-    name: qodex-backend
+    name: cowork-backend
     runtime: python
     plan: starter
     rootDir: backend
@@ -27,15 +27,20 @@ services:
         sync: false
       - key: MISTRAL_API_KEY
         sync: false
-      # Pinecone Vector Database
-      - key: PINECONE_API_KEY
+      # Hive integration
+      - key: HIVE_API_KEY
         sync: false
-      - key: PINECONE_HOST
+      - key: HIVE_USER_ID
         sync: false
-      - key: PINECONE_ENVIRONMENT
-        value: us-east-1
-      - key: PINECONE_INDEX_NAME
-        value: qodex-documents
+      - key: HIVE_WORKSPACE_ID
+        sync: false
+      - key: HIVE_UAT_PROJECT_ID
+        sync: false
+      # Email copies (Resend)
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_CC_ADDRESS
+        sync: false
       # Application Configuration
       - key: CORS_ORIGINS
         sync: false
@@ -51,7 +56,7 @@ services:
 
   # Frontend - Static Site with Global CDN
   - type: web
-    name: qodex-frontend
+    name: cowork-frontend
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
