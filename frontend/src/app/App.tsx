@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, useParams, useNavigate, useLocation } fro
 import { Sidebar } from '@/components/layout/Sidebar';
 import { ChatArea } from '@/features/chat';
 import { useDiscussionStore } from '@/features/discussions';
+import { ProjectsPage, ProjectDetailPage } from '@/features/projects';
+import { TemplatesPage } from '@/features/templates';
 import { useAuthStore, AuthModal } from '@/features/auth';
 import './App.css';
 
@@ -38,6 +40,9 @@ function AppLayout() {
           <Route path="/" element={<ChatPage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/chat/:discussionId" element={<ChatPage />} />
+          <Route path="/hubspaces" element={<ProjectsPage />} />
+          <Route path="/hubspaces/:projectId" element={<ProjectDetailPage />} />
+          <Route path="/templates" element={<TemplatesPage />} />
         </Routes>
       </main>
     </div>

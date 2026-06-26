@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { SquarePen, MessageCirclePlus, Settings, User, Trash2, PanelLeftClose, PanelLeft, MoreVertical, MoreHorizontal, ArrowUpDown, Check, Copy, LogOut, Sparkles, Mail, Globe, ChevronRight, Menu, X, BookOpen, FileText } from 'lucide-react';
+import { SquarePen, MessageCirclePlus, Settings, User, Trash2, PanelLeftClose, PanelLeft, MoreVertical, MoreHorizontal, ArrowUpDown, Check, Copy, LogOut, Sparkles, Mail, Globe, ChevronRight, Menu, X, FolderKanban, FolderInput, LayoutTemplate } from 'lucide-react';
 import { getAvatarIcon } from '@/shared/constants/avatarIcons';
 import { useDiscussionStore } from '@/features/discussions';
+import { useProjectStore } from '@/features/projects';
 import { useChatStore } from '@/features/chat';
 import { useAuthStore } from '@/features/auth';
-import { Discussion } from '@/shared/types';
+import { Discussion, Project } from '@/shared/types';
 import logo from '../../assets/logo.png';
 import { SampleQuestionsDropdown } from './SampleQuestionsDropdown';
 import { ContactModal } from './ContactModal';
@@ -41,13 +42,18 @@ export function Sidebar() {
     deleteAllDiscussions,
     activateDiscussion,
     setActiveDiscussionId,
+    moveDiscussionToProject,
   } = useDiscussionStore();
+  const { projects, fetchProjects } = useProjectStore();
   const { clearMessages } = useChatStore();
   const { user, signOut } = useAuthStore();
 
   useEffect(() => {
-    if (user) fetchDiscussions();
-  }, [fetchDiscussions, user]);
+    if (user) {
+      fetchDiscussions();
+      fetchProjects();
+    }
+  }, [fetchDiscussions, fetchProjects, user]);
 
   // Close settings menu when clicking outside
   useEffect(() => {
@@ -217,13 +223,13 @@ export function Sidebar() {
           <SquarePen size={18} />
           {!isCollapsed && <span>New Chat</span>}
         </button>
-        <button className="sidebar-nav-link" onClick={() => window.open('https://hive.com', '_blank')}>
-          <BookOpen size={18} />
-          {!isCollapsed && <span>Resources</span>}
+        <button className="sidebar-nav-link" onClick={() => navigate('/hubspaces')}>
+          <FolderKanban size={18} />
+          {!isCollapsed && <span>Hubspaces</span>}
         </button>
-        <button className="sidebar-nav-link" onClick={() => window.open('https://hive.com', '_blank')}>
-          <FileText size={18} />
-          {!isCollapsed && <span>Guidelines</span>}
+        <button className="sidebar-nav-link" onClick={() => navigate('/templates')}>
+          <LayoutTemplate size={18} />
+          {!isCollapsed && <span>Templates</span>}
         </button>
         <button className="sidebar-nav-link" onClick={() => setShowContactModal(true)}>
           <Mail size={18} />
@@ -320,6 +326,8 @@ export function Sidebar() {
                     onSelect={() => handleSelectDiscussion(discussion.id)}
                     onDelete={() => deleteDiscussion(discussion.id)}
                     onActivate={() => activateDiscussion(discussion.id)}
+                    projects={projects}
+                    onMoveToProject={(pid) => moveDiscussionToProject(discussion.id, pid)}
                     isCollapsed={isCollapsed}
                   />
                 ))}
@@ -499,11 +507,14 @@ interface ConversationItemProps {
   onSelect: () => void;
   onDelete: () => void;
   onActivate: () => void;
+  projects?: Project[];
+  onMoveToProject?: (projectId: string | null) => void;
   isCollapsed?: boolean;
 }
 
-function ConversationItem({ discussion, isActive, onSelect, onDelete, onActivate, isCollapsed }: ConversationItemProps) {
+function ConversationItem({ discussion, isActive, onSelect, onDelete, onActivate, projects = [], onMoveToProject, isCollapsed }: ConversationItemProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showProjectSubmenu, setShowProjectSubmenu] = useState(false);
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const [copied, setCopied] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -550,6 +561,13 @@ function ConversationItem({ discussion, isActive, onSelect, onDelete, onActivate
     setShowMenu(false);
   };
 
+  const handleMoveToProject = (e: React.MouseEvent, projectId: string | null) => {
+    e.stopPropagation();
+    onMoveToProject?.(projectId);
+    setShowProjectSubmenu(false);
+    setShowMenu(false);
+  };
+
   const handleMenuToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!btnRef.current) return;
@@ -560,6 +578,7 @@ function ConversationItem({ discussion, isActive, onSelect, onDelete, onActivate
       right: window.innerWidth - rect.right,
       zIndex: 9999,
     });
+    setShowProjectSubmenu(false);
     setShowMenu(!showMenu);
   };
 
@@ -591,6 +610,43 @@ function ConversationItem({ discussion, isActive, onSelect, onDelete, onActivate
                   <Copy size={14} />
                   <span>{copied ? 'Copied!' : 'Copy'}</span>
                 </button>
+                {onMoveToProject && (
+                  <div className="conversation-submenu-wrapper">
+                    <button
+                      className="conversation-menu-item"
+                      onClick={(e) => { e.stopPropagation(); setShowProjectSubmenu(!showProjectSubmenu); }}
+                    >
+                      <FolderInput size={14} />
+                      <span>Save to hubspace</span>
+                      <ChevronRight size={12} className={`submenu-chevron ${showProjectSubmenu ? 'open' : ''}`} />
+                    </button>
+                    {showProjectSubmenu && (
+                      <div className="conversation-submenu">
+                        {projects.length === 0 && (
+                          <span className="conversation-submenu-empty">No hubspaces yet</span>
+                        )}
+                        {projects.map((p) => (
+                          <button
+                            key={p.id}
+                            className="conversation-menu-item"
+                            onClick={(e) => handleMoveToProject(e, p.id)}
+                          >
+                            <span>{p.name}</span>
+                            {discussion.project_id === p.id && <Check size={13} />}
+                          </button>
+                        ))}
+                        {discussion.project_id && (
+                          <button
+                            className="conversation-menu-item"
+                            onClick={(e) => handleMoveToProject(e, null)}
+                          >
+                            <span>Remove from hubspace</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <button className="conversation-menu-item delete" onClick={handleDelete}>
                   <Trash2 size={14} />
                   <span>Delete</span>

@@ -17,6 +17,7 @@ interface DiscussionActions {
   setActiveDiscussionId: (id: string | null) => void;
   activateDiscussion: (id: string) => Promise<void>;
   updateDiscussionTitle: (id: string, title: string) => Promise<void>;
+  moveDiscussionToProject: (id: string, projectId: string | null) => Promise<void>;
   getActiveDiscussion: () => Discussion | undefined;
   clearError: () => void;
   reset: () => void;
@@ -99,6 +100,19 @@ export const useDiscussionStore = create<DiscussionStore>((set, get) => ({
       set(state => ({
         discussions: state.discussions.map(d =>
           d.id === id ? { ...d, title: updated.title } : d
+        ),
+      }));
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  moveDiscussionToProject: async (id: string, projectId: string | null) => {
+    try {
+      await api.updateDiscussion(id, { project_id: projectId });
+      set(state => ({
+        discussions: state.discussions.map(d =>
+          d.id === id ? { ...d, project_id: projectId } : d
         ),
       }));
     } catch (error) {

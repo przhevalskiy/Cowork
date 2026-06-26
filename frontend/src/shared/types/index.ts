@@ -13,6 +13,7 @@ export interface Message {
 export interface Discussion {
   id: string;
   title: string;
+  project_id?: string | null;
   messages: Message[];
   is_active: boolean;
   intent?: string;
@@ -22,12 +23,86 @@ export interface Discussion {
 
 export interface DiscussionCreate {
   title?: string;
+  project_id?: string | null;
 }
 
 export interface DiscussionUpdate {
   title?: string;
   is_active?: boolean;
   intent?: string;
+  project_id?: string | null;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  instructions?: string | null;
+  locked_intent?: string | null;
+  locked_service_type?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  parent_project_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectCreate {
+  name: string;
+  instructions?: string | null;
+  locked_intent?: string | null;
+  locked_service_type?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  parent_project_id?: string | null;
+}
+
+export interface ProjectUpdate {
+  name?: string;
+  instructions?: string | null;
+  locked_intent?: string | null;
+  locked_service_type?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  parent_project_id?: string | null;
+}
+
+export interface ProjectFile {
+  id: string;
+  project_id: string;
+  filename: string;
+  content_type?: string | null;
+  size_bytes?: number | null;
+  created_at: string;
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  description?: string | null;
+  body: string;
+  hubspace_id?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TemplateCreate {
+  name: string;
+  description?: string | null;
+  body: string;
+  hubspace_id?: string | null;
+  icon?: string | null;
+  color?: string | null;
+}
+
+export interface TemplateUpdate {
+  name?: string;
+  description?: string | null;
+  body?: string;
+  hubspace_id?: string | null;
+  icon?: string | null;
+  color?: string | null;
 }
 
 export interface ChatRequest {

@@ -6,6 +6,13 @@ import {
   MessageRole,
   AttachmentSummary,
   AttachmentDetail,
+  Project,
+  ProjectCreate,
+  ProjectUpdate,
+  ProjectFile,
+  Template,
+  TemplateCreate,
+  TemplateUpdate,
 } from '@/shared/types';
 import { supabase } from './supabase';
 
@@ -93,6 +100,85 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ content, role }),
     });
+  }
+
+  // Projects
+  async getProjects(): Promise<Project[]> {
+    return this.request<Project[]>('/api/projects');
+  }
+
+  async getProject(id: string): Promise<Project> {
+    return this.request<Project>(`/api/projects/${id}`);
+  }
+
+  async createProject(data: ProjectCreate): Promise<Project> {
+    return this.request<Project>('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateProject(id: string, data: ProjectUpdate): Promise<Project> {
+    return this.request<Project>(`/api/projects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    await this.request(`/api/projects/${id}`, { method: 'DELETE' });
+  }
+
+  async getProjectDiscussions(id: string): Promise<Discussion[]> {
+    return this.request<Discussion[]>(`/api/projects/${id}/discussions`);
+  }
+
+  // Project files ("Files & sources")
+  async getProjectFiles(projectId: string): Promise<ProjectFile[]> {
+    return this.request<ProjectFile[]>(`/api/projects/${projectId}/files`);
+  }
+
+  async uploadProjectFile(projectId: string, file: File): Promise<ProjectFile> {
+    const authHeaders = await getAuthHeaders();
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${this.baseUrl}/api/projects/${projectId}/files`, {
+      method: 'POST',
+      headers: { ...authHeaders },
+      body: formData,
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(error.detail || `HTTP error ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async deleteProjectFile(projectId: string, fileId: string): Promise<void> {
+    await this.request(`/api/projects/${projectId}/files/${fileId}`, { method: 'DELETE' });
+  }
+
+  // Templates
+  async getTemplates(): Promise<Template[]> {
+    return this.request<Template[]>('/api/templates');
+  }
+
+  async createTemplate(data: TemplateCreate): Promise<Template> {
+    return this.request<Template>('/api/templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTemplate(id: string, data: TemplateUpdate): Promise<Template> {
+    return this.request<Template>(`/api/templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTemplate(id: string): Promise<void> {
+    await this.request(`/api/templates/${id}`, { method: 'DELETE' });
   }
 
   getStreamUrl(): string {

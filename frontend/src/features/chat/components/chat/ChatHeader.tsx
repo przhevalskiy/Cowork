@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Download, Paperclip } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Download, Paperclip, FolderKanban } from 'lucide-react';
 import { AttachmentPanel } from '../attachments/AttachmentPanel';
 import { FilePreviewModal } from '../attachments/FilePreviewModal';
 import ExportDropdown from '../ui/ExportDropdown';
 import { useChatStore } from '../../store';
 import { useAttachmentStore } from '@/features/attachments/store';
+import { useDiscussionStore } from '@/features/discussions';
+import { useProjectStore } from '@/features/projects';
 import './ChatHeader.css';
 
 interface ChatHeaderProps {
@@ -13,9 +16,15 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({ discussionId, discussionTitle }: ChatHeaderProps) {
+  const navigate = useNavigate();
   const [showAttachments, setShowAttachments] = useState(false);
   const { messages } = useChatStore();
   const { attachments, fetchAttachments, reset } = useAttachmentStore();
+  const { discussions } = useDiscussionStore();
+  const { getProjectById } = useProjectStore();
+
+  const discussion = discussions.find((d) => d.id === discussionId);
+  const project = discussion?.project_id ? getProjectById(discussion.project_id) : undefined;
 
   useEffect(() => {
     reset();
@@ -27,6 +36,16 @@ export function ChatHeader({ discussionId, discussionTitle }: ChatHeaderProps) {
   return (
     <>
       <div className="chat-header">
+        {project && (
+          <button
+            className="chat-header-breadcrumb"
+            onClick={() => navigate(`/hubspaces/${project.id}`)}
+            title="Back to hubspace"
+          >
+            <FolderKanban size={14} />
+            <span>{project.name}</span>
+          </button>
+        )}
         <div className="chat-header-actions">
           <button
             className="chat-header-btn"
