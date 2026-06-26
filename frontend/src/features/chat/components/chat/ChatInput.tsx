@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, FormEvent, KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUp, Square } from 'lucide-react';
+import { ArrowUp, Square, AudioLines } from 'lucide-react';
 import { useSSE } from '@/shared/hooks/useSSE';
 import { useChatStore } from '@/features/chat';
 import { useDiscussionStore } from '@/features/discussions';
 import { InputActionsDropdown } from '../input/InputActionsDropdown';
-import { VoiceInput } from '../ui/VoiceInput';
+import { VoiceMode } from '../voice/VoiceMode';
 import { PromptWizardModal, detectWizardIntent } from '../modals/PromptWizardModal';
 import './ChatInput.css';
 
@@ -21,6 +21,7 @@ export function ChatInput({ initialValue = '', onValueChange, placeholder }: Cha
   const [input, setInput] = useState(initialValue);
   const [wizardIntent, setWizardIntent] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState('');
+  const [showVoiceMode, setShowVoiceMode] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { sendMessage, stopStream, isStreaming } = useSSE();
   const { activeDiscussionId, createDiscussion } = useDiscussionStore();
@@ -135,16 +136,15 @@ export function ChatInput({ initialValue = '', onValueChange, placeholder }: Cha
             className="chat-textarea"
           />
 
-          <VoiceInput
-            onTranscript={(text) => {
-              setInput(prev => {
-                const newValue = prev ? `${prev} ${text}` : text;
-                onValueChange?.(newValue);
-                return newValue;
-              });
-            }}
+          <button
+            type="button"
+            className="input-action-btn"
+            onClick={() => setShowVoiceMode(true)}
             disabled={isStreaming}
-          />
+            title="Voice mode — talk hands-free"
+          >
+            <AudioLines size={20} />
+          </button>
 
           {isStreaming ? (
             <button type="button" className="send-btn stop" onClick={stopStream} title="Stop generating">
@@ -161,6 +161,8 @@ export function ChatInput({ initialValue = '', onValueChange, placeholder }: Cha
       <p className="chat-input-hint">
         Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line
       </p>
+
+      <VoiceMode isOpen={showVoiceMode} onClose={() => setShowVoiceMode(false)} />
     </div>
   );
 }
