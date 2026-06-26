@@ -46,7 +46,7 @@ export function ChatArea({ initialMessage }: ChatAreaProps) {
   const prevDiscussionIdRef = useRef<string | null>(null);
   const hasAutoSentRef = useRef(false);
 
-  const { messages, isStreaming, isSubmitted, currentStreamContent, currentStreamIntent, loadMessagesForDiscussion } = useChatStore();
+  const { messages, isStreaming, isSubmitted, currentStreamContent, currentStreamIntent, persistedIntent, loadMessagesForDiscussion } = useChatStore();
   const { activeDiscussionId, discussions } = useDiscussionStore();
   const { sendMessage } = useSSE();
   const { start: startRafScroll, stop: stopRafScroll } = useRafScroll(messagesContainerRef);
@@ -111,7 +111,7 @@ export function ChatArea({ initialMessage }: ChatAreaProps) {
       content: currentStreamContent,
       role: 'assistant' as const,
       timestamp: '',
-      intent: currentStreamIntent?.intent || undefined,
+      intent: (currentStreamIntent ?? persistedIntent)?.intent || undefined,
     };
   }, [isStreaming, currentStreamContent, currentStreamIntent]);
 

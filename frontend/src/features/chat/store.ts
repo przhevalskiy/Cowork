@@ -7,6 +7,7 @@ interface ChatState {
   isStreaming: boolean;
   currentStreamContent: string;
   currentStreamIntent: { intent: string; label: string } | null;
+  persistedIntent: { intent: string; label: string } | null;
   isSubmitted: boolean;
   error: string | null;
   isLoadingMessages: boolean;
@@ -68,6 +69,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   isStreaming: false,
   currentStreamContent: '',
   currentStreamIntent: null,
+  persistedIntent: null,
   isSubmitted: false,
   error: null,
   isLoadingMessages: false,
@@ -117,7 +119,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   setStreamIntent: (intent: string, label: string) => {
-    set({ currentStreamIntent: { intent, label } });
+    set({ currentStreamIntent: { intent, label }, persistedIntent: { intent, label } });
   },
 
   finalizeStream: (messageId: string) => {
@@ -139,7 +141,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       content: state.currentStreamContent,
       role: 'assistant' as MessageRole,
       timestamp: new Date().toISOString(),
-      intent: state.currentStreamIntent?.intent || undefined,
+      intent: (state.currentStreamIntent ?? state.persistedIntent)?.intent || undefined,
     };
 
     set(state => ({
@@ -215,7 +217,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
   setSubmitted: (submitted: boolean) => set({ isSubmitted: submitted }),
 
-  clearMessages: () => set({ messages: [], error: null }),
+  clearMessages: () => set({ messages: [], error: null, persistedIntent: null }),
 
   clearError: () => set({ error: null }),
 
