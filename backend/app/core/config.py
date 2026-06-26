@@ -20,7 +20,9 @@ class Settings(BaseSettings):
     hive_api_key: str = ""
     hive_user_id: str = ""
     hive_workspace_id: str = ""
-    hive_uat_project_id: str = ""
+    # When true, requests route through the UAT twin maps in hive_service.py
+    # (per service_type / impact_type) instead of the production projects.
+    hive_uat_mode: bool = False
 
     # Mistral (fallback)
     mistral_api_key: str = ""

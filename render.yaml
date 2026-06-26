@@ -34,8 +34,9 @@ services:
         sync: false
       - key: HIVE_WORKSPACE_ID
         sync: false
-      - key: HIVE_UAT_PROJECT_ID
-        sync: false
+      # Set to "true" to route through the UAT project maps instead of production
+      - key: HIVE_UAT_MODE
+        value: "false"
       # Email copies (Resend)
       - key: RESEND_API_KEY
         sync: false
