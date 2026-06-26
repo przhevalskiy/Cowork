@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
-from app.api.routes import chat_router, discussions_router, hive_router, attachments_router
+from app.api.routes import chat_router, discussions_router, hive_router, attachments_router, projects_router, templates_router
 
 
 @asynccontextmanager
@@ -37,6 +37,8 @@ app.add_middleware(
 
 app.include_router(chat_router)
 app.include_router(discussions_router)
+app.include_router(projects_router)
+app.include_router(templates_router)
 app.include_router(hive_router)
 app.include_router(attachments_router)
 

@@ -19,14 +19,17 @@ class DiscussionService:
 
     # ── Discussions ──────────────────────────────────────────────
 
-    def list_discussions(self, user_id: str) -> List[Discussion]:
-        resp = (
+    def list_discussions(
+        self, user_id: str, project_id: Optional[str] = None
+    ) -> List[Discussion]:
+        query = (
             self._client.table("discussions")
             .select("*")
             .eq("user_id", user_id)
-            .order("updated_at", desc=True)
-            .execute()
         )
+        if project_id is not None:
+            query = query.eq("project_id", project_id)
+        resp = query.order("updated_at", desc=True).execute()
         return [self._row_to_discussion(r) for r in (resp.data or [])]
 
     def get_discussion(self, discussion_id: str, user_id: str) -> Optional[Discussion]:
@@ -52,10 +55,15 @@ class DiscussionService:
         discussion.messages = [self._row_to_message(m) for m in (msg_resp.data or [])]
         return discussion
 
-    def create_discussion(self, user_id: str, title: str = "New Chat") -> Discussion:
+    def create_discussion(
+        self, user_id: str, title: str = "New Chat", project_id: Optional[str] = None
+    ) -> Discussion:
+        row = {"user_id": user_id, "title": title}
+        if project_id is not None:
+            row["project_id"] = project_id
         resp = (
             self._client.table("discussions")
-            .insert({"user_id": user_id, "title": title})
+            .insert(row)
             .execute()
         )
         return self._row_to_discussion(resp.data[0])
@@ -64,7 +72,7 @@ class DiscussionService:
         self, discussion_id: str, user_id: str, **updates
     ) -> Optional[Discussion]:
         payload: dict = {"updated_at": datetime.utcnow().isoformat()}
-        for field in ("title", "is_active", "intent"):
+        for field in ("title", "is_active", "intent", "project_id"):
             if field in updates:
                 payload[field] = updates[field]
 
@@ -150,6 +158,7 @@ class DiscussionService:
         return Discussion(
             id=row["id"],
             title=row.get("title", "New Chat"),
+            project_id=row.get("project_id"),
             is_active=row.get("is_active", False),
             intent=row.get("intent"),
             created_at=row.get("created_at", datetime.utcnow()),

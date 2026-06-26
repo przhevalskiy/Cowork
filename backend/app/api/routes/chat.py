@@ -17,7 +17,9 @@ import anthropic as anthropic_sdk
 from app.providers import get_claude_provider, get_mistral_provider
 from app.services.attachment_service import build_attachment_context
 from app.services.discussion_service import get_discussion_service
-from app.services.hive_service import get_hive_service
+from app.services.project_service import get_project_service
+from app.services.project_file_service import build_project_file_context
+from app.services.hive_service import get_hive_service, SERVICE_LABELS
 from app.services.email_service import send_submission_copy
 from app.services.intent_classifier import classify_intent, get_intent_for_key
 from app.utils.streaming import format_sse_event
@@ -78,6 +80,32 @@ Once all required VDR fields are gathered, call show_vdr_checklist immediately �
 After the user confirms, call submit_vdr immediately — do not output any text before calling the tool."""
 
 
+def _build_project_context(project) -> str:
+    """System-prompt addition that locks a project's conversation to its request type."""
+    parts = [
+        "\n\n=== PROJECT CONTEXT ===",
+        f'This conversation belongs to the project "{project.name}".',
+    ]
+    if project.instructions:
+        parts.append(f"Project instructions to follow: {project.instructions}")
+
+    if project.locked_service_type:
+        label = SERVICE_LABELS.get(project.locked_service_type, project.locked_service_type)
+        parts.append(
+            f"This project is LOCKED to a MarComms service request of type "
+            f'"{project.locked_service_type}" ({label}). Use Flow A. Set '
+            f"service_type=\"{project.locked_service_type}\" and do NOT ask the user "
+            f"which service they need — it is already decided. Still collect the other "
+            f"required Flow A fields."
+        )
+    elif project.locked_intent == "research":
+        parts.append(
+            "This project is LOCKED to a Research Impact / Success (VDR) submission. "
+            "Use Flow B. Do NOT ask whether this is a service request vs. a submission."
+        )
+    return "\n".join(parts)
+
+
 class ChatRequest(BaseModel):
     discussion_id: str
     message: str
@@ -122,20 +150,32 @@ async def stream_chat(
         discussion.title = new_title
         title_updated = True
 
-    # Intent: classify once on first message, reuse on subsequent turns
+    # Load the owning project (if filed), to lock the request type and add context.
+    project = None
+    if discussion.project_id:
+        project = get_project_service().get_project(discussion.project_id, user_id)
+
+    # Intent: classify once on first message, reuse on subsequent turns.
+    # A project's locked_intent takes precedence over the classifier.
     emit_intent = False
     if not discussion.intent:
-        intent_result = classify_intent(request.message)
-        logger.info(f"Intent classified: '{request.message[:60]}' → {intent_result.intent}")
+        if project and project.locked_intent:
+            intent_result = get_intent_for_key(project.locked_intent)
+        else:
+            intent_result = classify_intent(request.message)
+        logger.info(f"Intent for '{request.message[:60]}' → {intent_result.intent}")
         disc_service.update_discussion(request.discussion_id, user_id, intent=intent_result.intent)
         discussion.intent = intent_result.intent
         emit_intent = True
     else:
         intent_result = get_intent_for_key(discussion.intent)
 
-    # Build system prompt — include any uploaded attachment text as reference
+    # Build system prompt — include attachment text, plus project context/files when filed.
     attachment_context = build_attachment_context(request.discussion_id)
     system_prompt = BASE_SYSTEM_PROMPT + intent_result.prompt_suffix + attachment_context
+    if project:
+        system_prompt += _build_project_context(project)
+        system_prompt += build_project_file_context(project.id)
 
     # Get conversation context
     context_messages = disc_service.get_context_messages(request.discussion_id, limit=20)
@@ -215,15 +255,20 @@ async def stream_chat(
                 yield f"data: {json.dumps({'type': 'checklist', 'fields': inp.get('fields', {}), 'intent': 'vdr'})}\n\n"
 
             elif name == "submit_to_hive":
+                fields = inp.get("fields", {})
+                # A locked project decides the service_type — enforce it regardless
+                # of what the model produced, so routing always matches the project.
+                if project and project.locked_service_type:
+                    fields["service_type"] = project.locked_service_type
                 hive_task_id = f"HIVE-{uuid.uuid4().hex[:8].upper()}"
                 if settings.hive_api_key:
                     try:
                         hive = get_hive_service()
-                        result = await hive.create_action(fields=inp.get("fields", {}))
+                        result = await hive.create_action(fields=fields)
                         hive_task_id = str(result.get("id") or result.get("_id") or hive_task_id)
                     except Exception as hive_err:
                         logger.error(f"Hive API error: {hive_err}")
-                send_submission_copy(inp.get("fields", {}), hive_task_id)
+                send_submission_copy(fields, hive_task_id)
                 yield f"data: {json.dumps({'type': 'submitted', 'hive_task_id': hive_task_id, 'message': 'Your request has been submitted to the marketing team.'})}\n\n"
 
             elif name == "submit_vdr":

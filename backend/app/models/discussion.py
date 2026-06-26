@@ -13,7 +13,7 @@ class DiscussionBase(BaseModel):
 
 class DiscussionCreate(DiscussionBase):
     """Model for creating a new discussion."""
-    pass
+    project_id: Optional[str] = None
 
 
 class DiscussionUpdate(BaseModel):
@@ -21,11 +21,13 @@ class DiscussionUpdate(BaseModel):
     title: Optional[str] = None
     is_active: Optional[bool] = None
     intent: Optional[str] = None
+    project_id: Optional[str] = None
 
 
 class Discussion(DiscussionBase):
     """Full discussion model with all fields."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: Optional[str] = None
     messages: List[Message] = Field(default_factory=list)
     is_active: bool = False
     intent: Optional[str] = None

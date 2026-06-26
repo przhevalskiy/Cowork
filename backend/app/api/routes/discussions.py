@@ -25,7 +25,8 @@ async def create_discussion(
     """Create a new discussion."""
     service = get_discussion_service()
     title = data.title if data else "New Chat"
-    return service.create_discussion(user_id, title)
+    project_id = data.project_id if data else None
+    return service.create_discussion(user_id, title, project_id=project_id)
 
 
 @router.get("/{discussion_id}", response_model=Discussion)
@@ -56,6 +57,11 @@ async def update_discussion(
         if data.is_active:
             service.deactivate_all(user_id)
         updates["is_active"] = data.is_active
+    # project_id is included only when explicitly sent, so null can unfile.
+    if "project_id" in data.model_fields_set:
+        updates["project_id"] = data.project_id
+    if "intent" in data.model_fields_set:
+        updates["intent"] = data.intent
 
     discussion = service.update_discussion(discussion_id, user_id, **updates)
     if not discussion:
