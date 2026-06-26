@@ -90,6 +90,10 @@ deactivate
 echo -e "${BLUE}Starting Frontend...${NC}"
 cd "$FRONTEND_DIR"
 
+# Load nvm so the correct Node version is available in this shell session
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then
     echo "Installing npm dependencies..."
