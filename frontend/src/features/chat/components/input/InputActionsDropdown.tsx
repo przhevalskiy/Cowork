@@ -1,8 +1,15 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BadgePlus, Paperclip, X, FileText, ImageIcon, Upload } from 'lucide-react';
+import {
+  BadgePlus, Paperclip, X, FileText, ImageIcon, Upload,
+  FolderKanban, LayoutTemplate, ChevronRight, ArrowLeft,
+} from 'lucide-react';
 import { useAttachmentStore } from '@/features/attachments/store';
 import { useDiscussionStore } from '@/features/discussions';
+import { useProjectStore } from '@/features/projects';
+import { useTemplateStore } from '@/features/templates';
+import { useChatStore } from '@/features/chat';
+import { Template } from '@/shared/types';
 import './InputActionsDropdown.css';
 
 const ALLOWED_TYPES = [
@@ -17,16 +24,33 @@ const ALLOWED_TYPES = [
 
 const ALLOWED_EXTENSIONS = ['.pdf', '.txt', '.md', '.docx', '.jpg', '.jpeg', '.png', '.webp'];
 
+type MenuView = 'root' | 'hubspaces' | 'templates';
+
 export function InputActionsDropdown() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [view, setView] = useState<MenuView>('root');
   const [showAttachments, setShowAttachments] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { activeDiscussionId, createDiscussion } = useDiscussionStore();
+  const { activeDiscussionId, createDiscussion, setActiveDiscussionId, moveDiscussionToProject } = useDiscussionStore();
   const { attachments, isUploading, uploadProgress, uploadAttachment, deleteAttachment } = useAttachmentStore();
+  const { projects, fetchProjects } = useProjectStore();
+  const { templates, fetchTemplates } = useTemplateStore();
+  const { clearMessages } = useChatStore();
+
+  // Reset to the root view and refresh hubspace/template lists each time it opens.
+  useEffect(() => {
+    if (isOpen) {
+      setView('root');
+      if (projects.length === 0) fetchProjects();
+      if (templates.length === 0) fetchTemplates();
+    }
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const closeMenu = () => { setIsOpen(false); setView('root'); };
 
   const validateFile = (file: File): boolean => {
     const extension = '.' + file.name.split('.').pop()?.toLowerCase();
@@ -69,12 +93,34 @@ export function InputActionsDropdown() {
   };
 
   const handleAttachFiles = () => {
+    closeMenu();
     if (attachments.length > 0) {
       setShowAttachments(true);
-      setIsOpen(false);
     } else {
       fileInputRef.current?.click();
-      setIsOpen(false);
+    }
+  };
+
+  const pickHubspace = async (hubId: string) => {
+    closeMenu();
+    // File the current conversation if one exists, otherwise start a task there.
+    if (activeDiscussionId) {
+      await moveDiscussionToProject(activeDiscussionId, hubId);
+    } else {
+      const d = await createDiscussion({ project_id: hubId });
+      navigate(`/chat/${d.id}`);
+    }
+  };
+
+  const pickTemplate = async (t: Template) => {
+    closeMenu();
+    if (t.hubspace_id) {
+      const d = await createDiscussion({ project_id: t.hubspace_id });
+      navigate(`/chat/${d.id}`, { state: { initialMessage: t.body } });
+    } else {
+      clearMessages();
+      setActiveDiscussionId(null);
+      navigate('/chat', { state: { initialMessage: t.body } });
     }
   };
 
@@ -111,22 +157,89 @@ export function InputActionsDropdown() {
 
       {isOpen && (
         <>
-          <div className="input-actions-backdrop" onClick={() => setIsOpen(false)} />
+          <div className="input-actions-backdrop" onClick={closeMenu} />
           <div className="input-actions-dropdown">
-            <button
-              type="button"
-              className="input-actions-item"
-              onClick={handleAttachFiles}
-            >
-              <Paperclip size={18} />
-              <div className="input-actions-item-content">
-                <span className="input-actions-item-label">Attach files</span>
-                <span className="input-actions-item-desc">Add context to this conversation</span>
+            {/* Root menu */}
+            {view === 'root' && (
+              <>
+                <button type="button" className="input-actions-item" onClick={handleAttachFiles}>
+                  <Paperclip size={18} />
+                  <div className="input-actions-item-content">
+                    <span className="input-actions-item-label">Attach a file</span>
+                    <span className="input-actions-item-desc">Add context to this conversation</span>
+                  </div>
+                  {attachments.length > 0 && (
+                    <span className="input-actions-item-count">{attachments.length}</span>
+                  )}
+                </button>
+
+                <button type="button" className="input-actions-item" onClick={() => setView('hubspaces')}>
+                  <FolderKanban size={18} />
+                  <div className="input-actions-item-content">
+                    <span className="input-actions-item-label">Work under a hubspace</span>
+                    <span className="input-actions-item-desc">Organize this request</span>
+                  </div>
+                  {projects.length > 0
+                    ? <span className="input-actions-item-count">{projects.length}</span>
+                    : <ChevronRight size={16} className="input-actions-item-chevron" />}
+                </button>
+
+                <button type="button" className="input-actions-item" onClick={() => setView('templates')}>
+                  <LayoutTemplate size={18} />
+                  <div className="input-actions-item-content">
+                    <span className="input-actions-item-label">Use a template</span>
+                    <span className="input-actions-item-desc">Start from a saved request</span>
+                  </div>
+                  {templates.length > 0
+                    ? <span className="input-actions-item-count">{templates.length}</span>
+                    : <ChevronRight size={16} className="input-actions-item-chevron" />}
+                </button>
+              </>
+            )}
+
+            {/* Hubspaces submenu */}
+            {view === 'hubspaces' && (
+              <div className="input-actions-submenu">
+                <button type="button" className="input-actions-back" onClick={() => setView('root')}>
+                  <ArrowLeft size={15} /> Work under a hubspace
+                </button>
+                <div className="input-actions-sublist">
+                  {projects.length === 0 ? (
+                    <button type="button" className="input-actions-setup" onClick={() => { closeMenu(); navigate('/hubspaces'); }}>
+                      No hubspaces yet — set one up →
+                    </button>
+                  ) : (
+                    projects.map((p) => (
+                      <button key={p.id} type="button" className="input-actions-subitem" onClick={() => pickHubspace(p.id)}>
+                        <FolderKanban size={14} /> {p.name}
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
-              {attachments.length > 0 && (
-                <span className="input-actions-item-count">{attachments.length}</span>
-              )}
-            </button>
+            )}
+
+            {/* Templates submenu */}
+            {view === 'templates' && (
+              <div className="input-actions-submenu">
+                <button type="button" className="input-actions-back" onClick={() => setView('root')}>
+                  <ArrowLeft size={15} /> Use a template
+                </button>
+                <div className="input-actions-sublist">
+                  {templates.length === 0 ? (
+                    <button type="button" className="input-actions-setup" onClick={() => { closeMenu(); navigate('/templates'); }}>
+                      No templates yet — set one up →
+                    </button>
+                  ) : (
+                    templates.map((t) => (
+                      <button key={t.id} type="button" className="input-actions-subitem" onClick={() => pickTemplate(t)}>
+                        <LayoutTemplate size={14} /> {t.name}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
