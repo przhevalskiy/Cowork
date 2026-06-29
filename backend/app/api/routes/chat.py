@@ -22,6 +22,7 @@ from app.services.project_file_service import build_project_file_context
 from app.services.hive_service import get_hive_service, SERVICE_LABELS
 from app.services.email_service import send_submission_copy
 from app.services.intent_classifier import classify_intent, get_intent_for_key
+from app.services.field_default_service import get_field_default_service
 from app.utils.streaming import format_sse_event
 from app.auth import get_current_user, UserContext
 
@@ -106,6 +107,42 @@ def _build_project_context(project) -> str:
     return "\n".join(parts)
 
 
+# Promotion thresholds: how many consistent repeats before a learned field stops
+# being asked. suggest = state it and let the user correct; silent = fill it in
+# directly without mentioning it (never for always_confirm fields).
+_SUGGEST_AT = 2
+_SILENT_AT = 4
+
+
+def _build_defaults_context(defaults) -> tuple[str, dict]:
+    """Turn a user's learned field defaults into a system-prompt block plus the dict
+    of values we are pre-filling (used later to diff against what they submit)."""
+    silent, suggest = [], []
+    for d in defaults:
+        if d.confidence >= _SILENT_AT and not d.always_confirm:
+            silent.append(d)
+        elif d.confidence >= _SUGGEST_AT:
+            suggest.append(d)
+    if not silent and not suggest:
+        return "", {}
+
+    block = ["\n\n=== KNOWN DEFAULTS FOR THIS USER ==="]
+    if silent:
+        block.append(
+            "Treat these as already provided. Do NOT ask for them; fill them into "
+            "the checklist directly:"
+        )
+        block += [f"- {d.field}: {d.value}" for d in silent]
+    if suggest:
+        block.append(
+            "State these as assumptions the user can correct; do not interrogate. "
+            "Use the value unless the user says otherwise:"
+        )
+        block += [f"- {d.field}: {d.value}" for d in suggest]
+    injected = {d.field: d.value for d in silent + suggest}
+    return "\n".join(block), injected
+
+
 class ChatRequest(BaseModel):
     discussion_id: str
     message: str
@@ -176,6 +213,21 @@ async def stream_chat(
     if project:
         system_prompt += _build_project_context(project)
         system_prompt += build_project_file_context(project.id)
+
+    # Pre-fill from this user's learned defaults for the request type, so recurring
+    # tickets stop re-asking predictable fields. Keyed on the locked service_type
+    # when filed under a hubspace, otherwise on the classified intent.
+    injected_defaults: dict = {}
+    if discussion.intent and discussion.intent != "vdr":
+        default_key = (project.locked_service_type if project else None) or discussion.intent
+        try:
+            defaults = get_field_default_service().get_defaults(
+                user_id, default_key, project.id if project else None,
+            )
+            defaults_block, injected_defaults = _build_defaults_context(defaults)
+            system_prompt += defaults_block
+        except Exception as e:
+            logger.warning(f"Could not load field defaults: {e}")
 
     # Get conversation context
     context_messages = disc_service.get_context_messages(request.discussion_id, limit=20)
@@ -269,6 +321,14 @@ async def stream_chat(
                     except Exception as hive_err:
                         logger.error(f"Hive API error: {hive_err}")
                 send_submission_copy(fields, hive_task_id)
+                # Learn from this submission: unchanged pre-fills gain confidence,
+                # edited values overwrite. Must use the SAME key as the injection
+                # above, or the next lookup won't find what we stored.
+                learn_key = (project.locked_service_type if project else None) or discussion.intent
+                get_field_default_service().learn(
+                    user_id, learn_key, submitted=fields, injected=injected_defaults,
+                    hubspace_id=project.id if project else None,
+                )
                 yield f"data: {json.dumps({'type': 'submitted', 'hive_task_id': hive_task_id, 'message': 'Your request has been submitted to the marketing team.'})}\n\n"
 
             elif name == "submit_vdr":
