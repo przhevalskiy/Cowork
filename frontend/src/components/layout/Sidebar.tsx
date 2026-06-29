@@ -18,7 +18,7 @@ import './Sidebar.css';
 
 export function Sidebar() {
   const navigate = useNavigate();
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showSampleQuestions, setShowSampleQuestions] = useState(false);
