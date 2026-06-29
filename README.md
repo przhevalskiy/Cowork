@@ -305,16 +305,6 @@ A `render.yaml` blueprint defines a Python web service (backend) and a static si
 
 ---
 
-## License
-
-Copyright (c) 2026 Aleksey Przhevalskiy and Tamer Institute for Social Enterprise and Climate Change. All rights reserved.
-
-Licensed under the [Business Source License 1.1](LICENSE). Production use requires a commercial license from the Licensor. The Licensed Work converts to the MIT License on 2029-03-24.
-
-For commercial licensing inquiries, contact: przalex2@gmail.com
-
----
-
 ## Acknowledgments
 
 - Anthropic — Claude (primary provider, tool use)
