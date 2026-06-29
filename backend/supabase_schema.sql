@@ -272,6 +272,43 @@ CREATE POLICY "Users can delete own templates"
   ON templates FOR DELETE
   USING (auth.uid() = user_id);
 
+-- Learned field defaults: per user (optionally per hubspace) remembered answers
+-- for a given request type. Pre-fills the intake checklist so recurring tickets
+-- stop re-asking predictable fields. confidence drives ask -> suggest -> silent.
+CREATE TABLE IF NOT EXISTS field_defaults (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  hubspace_id    UUID REFERENCES projects(id) ON DELETE CASCADE,  -- NULL = user-global
+  service_type   TEXT NOT NULL,                  -- scopes a default to a request type
+  field          TEXT NOT NULL,                  -- e.g. 'contact_name', 'details'
+  value          TEXT NOT NULL,
+  confidence     INT  NOT NULL DEFAULT 1,        -- repeat count; drives ask -> suggest -> silent
+  always_confirm BOOLEAN NOT NULL DEFAULT false, -- high-stakes: pre-fill but never go silent
+  updated_at     TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (user_id, hubspace_id, service_type, field)
+);
+
+CREATE INDEX IF NOT EXISTS idx_field_defaults_lookup
+  ON field_defaults(user_id, service_type);
+
+ALTER TABLE field_defaults ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own field_defaults"
+  ON field_defaults FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own field_defaults"
+  ON field_defaults FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own field_defaults"
+  ON field_defaults FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own field_defaults"
+  ON field_defaults FOR DELETE
+  USING (auth.uid() = user_id);
+
 -- ===========================================
 -- Migration: Qodex → Cowork
 -- Run this block on existing Qodex databases
