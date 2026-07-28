@@ -1,0 +1,15 @@
+.cosight-layout {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  background-color: var(--color-white);
+}
+
+.cosight-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-y: auto;
+  background-color: var(--gray-50);
+}

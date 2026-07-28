@@ -1,0 +1,31 @@
+/* ── Always-visible overview header with chibis ── */
+.overview-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.overview-header__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.overview-header__text h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--cs-navy);
+  margin: 0;
+}
+
+/* Ask bar embedded below KPIs */
+.overview-ask {
+  padding: 8px 0 4px;
+}
+
+.overview-controls {
+  display: flex;
+  justify-content: flex-end;
+}

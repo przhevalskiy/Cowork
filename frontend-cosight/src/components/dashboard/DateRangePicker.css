@@ -1,0 +1,48 @@
+.date-range-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.drp-preset {
+  padding: 5px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: 20px;
+  background: var(--color-white);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--gray-600);
+  font-family: 'Albert Sans', sans-serif;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.drp-preset:hover {
+  background: var(--gray-50);
+  border-color: var(--cs-blue);
+  color: var(--cs-navy);
+}
+
+.drp-custom { display: flex; align-items: center; gap: 6px; }
+
+.drp-custom input {
+  padding: 4px 8px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'Albert Sans', sans-serif;
+  color: var(--gray-900);
+  background: var(--color-white);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.drp-custom input:focus { border-color: var(--cs-blue); }
+
+.drp-current {
+  font-size: 12px;
+  color: var(--gray-400);
+  margin-left: 4px;
+}

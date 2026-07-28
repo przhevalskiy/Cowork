@@ -1,0 +1,110 @@
+.agent-input-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* Pill-shaped input — matches Cowork's .chat-input-box */
+.agent-input-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: var(--color-white);
+  border: 1px solid var(--gray-200);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.agent-input-box:focus-within {
+  border-color: var(--cs-blue);
+  box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.15);
+}
+
+.agent-input-box--streaming {
+  border-color: var(--cs-navy);
+}
+
+.agent-textarea {
+  flex: 1;
+  min-height: 24px;
+  max-height: 120px;
+  padding: 0;
+  margin-top: 2px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--gray-900);
+  background: transparent;
+  resize: none;
+  border: none;
+  outline: none;
+  font-family: 'Albert Sans', -apple-system, sans-serif;
+}
+
+.agent-textarea::placeholder { color: var(--gray-400); }
+.agent-textarea:disabled     { opacity: 0.5; }
+
+/* Send / Stop button — matches Cowork's .send-btn */
+.agent-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--cs-navy);
+  color: var(--color-white);
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color var(--transition-fast);
+}
+
+.agent-send-btn:hover:not(:disabled) { background-color: var(--cs-navy-dark); }
+
+.agent-send-btn:disabled {
+  background-color: var(--gray-200);
+  color: var(--gray-400);
+  cursor: not-allowed;
+}
+
+.agent-send-btn--stop { background-color: var(--color-error); }
+.agent-send-btn--stop:hover { background-color: #dc2626; }
+
+/* Quick prompt pills — matches Cowork's .quick-action-btn */
+.agent-quick-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.agent-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: var(--color-white);
+  border: 1px solid var(--gray-200);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-700);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+  font-family: 'Albert Sans', -apple-system, sans-serif;
+}
+
+.agent-quick-btn:hover:not(:disabled) {
+  background-color: var(--gray-50);
+  border-color: var(--gray-300);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.agent-quick-btn:disabled { opacity: 0.4; cursor: not-allowed; }

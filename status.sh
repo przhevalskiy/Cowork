@@ -14,87 +14,82 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}"
-echo "╔═══════════════════════════════════════╗"
-echo "║         Cowork - Service Status       ║"
-echo "╚═══════════════════════════════════════╝"
+echo "╔══════════════════════════════════════════╗"
+echo "║     Cowork + CoSight - Status            ║"
+echo "╚══════════════════════════════════════════╝"
 echo -e "${NC}"
 
 ALL_OK=true
 
-# ── Backend ──────────────────────────────────
-echo -e "${BLUE}Backend${NC}"
+check_process() {
+    local name=$1
+    local pidfile="$PID_DIR/$2"
+    local url=$3
 
-if [ -f "$PID_DIR/backend.pid" ]; then
-    BACKEND_PID=$(cat "$PID_DIR/backend.pid")
-    if ps -p "$BACKEND_PID" > /dev/null 2>&1; then
-        echo -e "  Process   ${GREEN}✓ Running${NC} (PID: $BACKEND_PID)"
+    echo -e "${BLUE}$name${NC}"
+    if [ -f "$pidfile" ]; then
+        local pid=$(cat "$pidfile")
+        if ps -p "$pid" > /dev/null 2>&1; then
+            echo -e "  Process   ${GREEN}✓ Running${NC} (PID: $pid)"
+        else
+            echo -e "  Process   ${RED}✗ Not running${NC} (stale PID)"
+            ALL_OK=false
+        fi
     else
-        echo -e "  Process   ${RED}✗ Not running${NC} (stale PID file)"
+        echo -e "  Process   ${RED}✗ Not running${NC}"
         ALL_OK=false
     fi
+
+    local status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$url" 2>/dev/null)
+    if [ "$status" = "200" ]; then
+        echo -e "  Reachable ${GREEN}✓ $url → 200 OK${NC}"
+    else
+        echo -e "  Reachable ${RED}✗ $url → unreachable${NC}"
+        ALL_OK=false
+    fi
+    echo ""
+}
+
+# Backend with provider details
+echo -e "${BLUE}Backend${NC}"
+if [ -f "$PID_DIR/backend.pid" ]; then
+    PID=$(cat "$PID_DIR/backend.pid")
+    ps -p "$PID" > /dev/null 2>&1 \
+        && echo -e "  Process   ${GREEN}✓ Running${NC} (PID: $PID)" \
+        || { echo -e "  Process   ${RED}✗ Not running${NC}"; ALL_OK=false; }
 else
-    echo -e "  Process   ${RED}✗ Not running${NC}"
-    ALL_OK=false
+    echo -e "  Process   ${RED}✗ Not running${NC}"; ALL_OK=false
 fi
 
-# Ping health endpoint
 HEALTH=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://localhost:8000/health 2>/dev/null)
 if [ "$HEALTH" = "200" ]; then
     echo -e "  Health    ${GREEN}✓ http://localhost:8000/health → 200 OK${NC}"
-
-    # Show provider status from health endpoint
     HEALTH_JSON=$(curl -s --max-time 3 http://localhost:8000/health 2>/dev/null)
     if command -v python3 &>/dev/null && [ -n "$HEALTH_JSON" ]; then
-        PROVIDERS=$(echo "$HEALTH_JSON" | python3 -c "
+        echo "$HEALTH_JSON" | python3 -c "
 import sys, json
 try:
-    data = json.load(sys.stdin)
-    providers = data.get('providers', {})
-    for name, status in providers.items():
-        mark = '✓' if status else '✗'
-        print(f'  Provider  {mark} {name}')
-except:
-    pass
-" 2>/dev/null)
-        [ -n "$PROVIDERS" ] && echo "$PROVIDERS"
+    d = json.load(sys.stdin)
+    for k,v in d.get('providers',{}).items():
+        print(f'  Provider  {chr(10003) if v else chr(10007)} {k}')
+except: pass
+" 2>/dev/null
     fi
 else
-    echo -e "  Health    ${RED}✗ http://localhost:8000/health → unreachable${NC}"
-    ALL_OK=false
+    echo -e "  Health    ${RED}✗ unreachable${NC}"; ALL_OK=false
 fi
-
 echo ""
 
-# ── Frontend ─────────────────────────────────
-echo -e "${BLUE}Frontend${NC}"
+check_process "Cowork Frontend"  "frontend.pid" "http://localhost:5173"
+check_process "CoSight Frontend" "cosight.pid"  "http://localhost:5174"
 
-if [ -f "$PID_DIR/frontend.pid" ]; then
-    FRONTEND_PID=$(cat "$PID_DIR/frontend.pid")
-    if ps -p "$FRONTEND_PID" > /dev/null 2>&1; then
-        echo -e "  Process   ${GREEN}✓ Running${NC} (PID: $FRONTEND_PID)"
-    else
-        echo -e "  Process   ${RED}✗ Not running${NC} (stale PID file)"
-        ALL_OK=false
-    fi
-else
-    echo -e "  Process   ${RED}✗ Not running${NC}"
-    ALL_OK=false
-fi
-
-FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://localhost:5173 2>/dev/null)
-if [ "$FRONTEND_STATUS" = "200" ]; then
-    echo -e "  Reachable ${GREEN}✓ http://localhost:5173 → 200 OK${NC}"
-else
-    echo -e "  Reachable ${RED}✗ http://localhost:5173 → unreachable${NC}"
-    ALL_OK=false
-fi
-
-echo ""
-
-# ── Summary ──────────────────────────────────
 echo "────────────────────────────────────────"
 if $ALL_OK; then
     echo -e "${GREEN}✓ All systems operational${NC}"
+    echo ""
+    echo -e "  Cowork:   ${BLUE}http://localhost:5173${NC}"
+    echo -e "  CoSight:  ${BLUE}http://localhost:5174${NC}"
+    echo -e "  API Docs: ${BLUE}http://localhost:8000/docs${NC}"
 else
     echo -e "${RED}✗ Some services are down — run ./start.sh to restart${NC}"
 fi

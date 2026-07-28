@@ -4,6 +4,9 @@ from contextlib import asynccontextmanager
 
 from app.core.config import get_settings
 from app.api.routes import chat_router, discussions_router, hive_router, attachments_router, projects_router, templates_router
+from app.api.routes.cosight import metrics_router as cosight_metrics_router
+from app.api.routes.cosight import chat_router as cosight_chat_router
+from app.api.routes.cosight import reports_router as cosight_reports_router
 
 
 @asynccontextmanager
@@ -41,6 +44,11 @@ app.include_router(projects_router)
 app.include_router(templates_router)
 app.include_router(hive_router)
 app.include_router(attachments_router)
+
+# CoSight routes
+app.include_router(cosight_metrics_router)
+app.include_router(cosight_chat_router)
+app.include_router(cosight_reports_router)
 
 
 @app.get("/")

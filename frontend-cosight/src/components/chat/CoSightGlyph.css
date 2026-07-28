@@ -1,0 +1,22 @@
+.cs-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--cs-navy, #001b5e);
+  transition: color var(--transition-fast, 150ms ease);
+}
+
+.cs-glyph--loading {
+  color: var(--cs-blue, #5b9bd5);
+  animation: glyph-pulse 1.4s ease-in-out infinite;
+}
+
+.cs-glyph--done {
+  color: var(--cs-navy, #001b5e);
+}
+
+@keyframes glyph-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(0.92); }
+}

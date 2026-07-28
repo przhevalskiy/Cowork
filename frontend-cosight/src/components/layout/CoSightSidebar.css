@@ -1,0 +1,311 @@
+/* CoSight Sidebar — same structure and behaviour as Cowork's Sidebar.css */
+
+.cs-sidebar {
+  width: var(--sidebar-width, 260px);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--gray-50);
+  border-right: 1px solid var(--gray-200);
+  flex-shrink: 0;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+/* ── Collapsed ── */
+.cs-sidebar.collapsed {
+  width: 70px;
+  cursor: e-resize;
+}
+
+.cs-sidebar.collapsed button,
+.cs-sidebar.collapsed a {
+  cursor: pointer;
+}
+
+/* ── Resize handle ── */
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 2px;
+  height: 100%;
+  z-index: 10;
+  cursor: w-resize;
+  transition: background-color 0.15s ease;
+}
+
+.cs-sidebar.collapsed .sidebar-resize-handle {
+  cursor: e-resize;
+}
+
+/* ── Header ── */
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cs-sidebar.collapsed .sidebar-header {
+  justify-content: center;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.cs-sidebar.collapsed .sidebar-logo {
+  display: none;
+}
+
+.sidebar-logo-wordmark {
+  font-family: 'Albert Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gray-900);
+  letter-spacing: -0.3px;
+}
+
+.sidebar-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+  color: var(--gray-500);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.sidebar-collapse-btn:hover {
+  background-color: var(--gray-150);
+  color: var(--gray-700);
+}
+
+/* ── Nav links ── */
+.sidebar-nav-links {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border-bottom: 1px solid var(--gray-200);
+  gap: 2px;
+}
+
+.sidebar-nav-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-600);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  font-family: 'Albert Sans', sans-serif;
+}
+
+.sidebar-nav-link:hover,
+.sidebar-nav-link:hover span {
+  background-color: var(--gray-100);
+  color: var(--cs-navy);
+  text-decoration: none;
+}
+
+.sidebar-nav-link.active {
+  background-color: var(--brand-100);
+  color: var(--cs-navy);
+  font-weight: 600;
+}
+
+.cs-sidebar.collapsed .sidebar-nav-link {
+  justify-content: center;
+  padding: 10px;
+}
+
+/* ── Conversations header ── */
+.conversations-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px 4px;
+}
+
+.sidebar-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: capitalize;
+  letter-spacing: 0.5px;
+  margin: 0;
+  padding: 0 4px;
+}
+
+/* ── Conversations scroll area ── */
+.sidebar-conversations {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-conversations::-webkit-scrollbar { display: none; }
+
+/* ── Conversation groups ── */
+.conversation-group {
+  margin-bottom: 12px;
+}
+
+.conversation-group-title {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: capitalize;
+  letter-spacing: 0.5px;
+}
+
+.conversation-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Conversation item ── */
+.conversation-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.conversation-item:hover { background-color: var(--gray-100); }
+
+.conversation-item.active { background-color: var(--gray-150); }
+
+.conversation-item-icon {
+  flex-shrink: 0;
+  color: var(--gray-500);
+}
+
+.cs-sidebar.collapsed .conversation-item {
+  justify-content: center;
+  padding: 10px;
+}
+
+.conversation-item-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--gray-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conversation-item.active .conversation-item-title {
+  color: var(--gray-900);
+  font-weight: 500;
+}
+
+/* ── Conversation item menu ── */
+.conversation-item-menu-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.conversation-item-menu-btn {
+  opacity: 0;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--gray-400);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.conversation-item:hover .conversation-item-menu-btn { opacity: 1; }
+.conversation-item-menu-btn:hover {
+  background-color: var(--gray-200);
+  color: var(--gray-700);
+}
+
+/* ── Conversation context menu (portalled) ── */
+.conversation-menu {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  min-width: 140px;
+  overflow: hidden;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.conversation-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--gray-700);
+  background: white;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  font-family: 'Albert Sans', sans-serif;
+}
+
+.conversation-menu-item:hover { background-color: var(--gray-50); }
+.conversation-menu-item.delete { color: var(--color-error); }
+.conversation-menu-item.delete:hover { background-color: #fee2e2; }
+
+/* ── Footer ── */
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--gray-200);
+}
+
+.sidebar-cbs-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-400);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sidebar-icon-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.cs-sidebar.collapsed .conversation-item {
+  animation: sidebar-icon-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}

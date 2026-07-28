@@ -1,0 +1,54 @@
+.channel-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.channel-badge--stale { background: #fef3c7; color: #92400e; }
+.channel-badge--error { background: #fee2e2; color: #991b1b; }
+
+/* Loading skeleton — matches Cowork feel */
+.loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.skeleton-row {
+  height: 18px;
+  background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-150) 50%, var(--gray-100) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-row:nth-child(2) { width: 80%; }
+.skeleton-row:nth-child(3) { width: 60%; }
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.empty-state {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--gray-400);
+  font-size: 14px;
+}
+
+.error-state {
+  padding: 14px 16px;
+  background: #fee2e2;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

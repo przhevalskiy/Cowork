@@ -32,8 +32,24 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     email_cc_address: str = ""
 
+    # CoSight — Google APIs (GA4 + GSC share one service-account JSON)
+    google_credentials_json: str = ""     # full JSON string of the service-account key
+    ga4_property_id: str = "288367390"   # numeric property ID, NOT G-XXXX
+    gsc_site_url: str = "https://business.columbia.edu/"
+
+    # CoSight — Emma email marketing
+    emma_public_key: str = ""
+    emma_private_key: str = ""
+    emma_account_id: str = ""
+
+    # CoSight — Sprout Social (pending credential)
+    sprout_api_token: str = ""
+
+    # CoSight — Event Registry (media mentions)
+    eventregistry_api_key: str = ""
+
     # Application
-    cors_origins: str = "http://localhost:5173,http://localhost:3000"
+    cors_origins: str = "http://localhost:5173,http://localhost:5174,http://localhost:3000"
     debug: bool = True
     log_level: str = "INFO"
 

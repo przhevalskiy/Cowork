@@ -1,13 +1,16 @@
 #!/bin/bash
 
-# Cowork - Start All Services
-# This script starts the backend and frontend services
+# Cowork + CoSight - Start All Services
+# Backend: port 8000 (shared)
+# Cowork frontend:  port 5173
+# CoSight frontend: port 5174
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/backend"
 FRONTEND_DIR="$SCRIPT_DIR/frontend"
+COSIGHT_DIR="$SCRIPT_DIR/frontend-cosight"
 PID_DIR="$SCRIPT_DIR/.pids"
 
 # Colors for output
@@ -18,9 +21,9 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}"
-echo "╔═══════════════════════════════════════╗"
-echo "║         Cowork - Starting Services    ║"
-echo "╚═══════════════════════════════════════╝"
+echo "╔══════════════════════════════════════════╗"
+echo "║     Cowork + CoSight - Starting          ║"
+echo "╚══════════════════════════════════════════╝"
 echo -e "${NC}"
 
 # Create PID directory
@@ -39,7 +42,16 @@ fi
 if [ -f "$PID_DIR/frontend.pid" ]; then
     FRONTEND_PID=$(cat "$PID_DIR/frontend.pid")
     if ps -p "$FRONTEND_PID" > /dev/null 2>&1; then
-        echo -e "${YELLOW}Warning: Frontend is already running (PID: $FRONTEND_PID)${NC}"
+        echo -e "${YELLOW}Warning: Cowork frontend is already running (PID: $FRONTEND_PID)${NC}"
+        echo "Run ./stop.sh first to stop existing services"
+        exit 1
+    fi
+fi
+
+if [ -f "$PID_DIR/cosight.pid" ]; then
+    COSIGHT_PID=$(cat "$PID_DIR/cosight.pid")
+    if ps -p "$COSIGHT_PID" > /dev/null 2>&1; then
+        echo -e "${YELLOW}Warning: CoSight frontend is already running (PID: $COSIGHT_PID)${NC}"
         echo "Run ./stop.sh first to stop existing services"
         exit 1
     fi
@@ -56,11 +68,16 @@ if [ ! -f "$BACKEND_DIR/.env" ]; then
 fi
 
 if [ ! -f "$FRONTEND_DIR/.env" ]; then
-    echo -e "${YELLOW}Warning: Frontend .env file not found${NC}"
+    echo -e "${YELLOW}Warning: Cowork frontend .env file not found${NC}"
     if [ -f "$FRONTEND_DIR/.env.example" ]; then
         echo "Creating .env from .env.example..."
         cp "$FRONTEND_DIR/.env.example" "$FRONTEND_DIR/.env"
     fi
+fi
+
+# CoSight frontend .env (points to same backend)
+if [ ! -f "$COSIGHT_DIR/.env" ]; then
+    echo "VITE_API_URL=http://localhost:8000" > "$COSIGHT_DIR/.env"
 fi
 
 # Start Backend
@@ -86,8 +103,8 @@ echo -e "${GREEN}✓ Backend started (PID: $BACKEND_PID)${NC}"
 # Deactivate virtual environment
 deactivate
 
-# Start Frontend
-echo -e "${BLUE}Starting Frontend...${NC}"
+# Start Cowork Frontend
+echo -e "${BLUE}Starting Cowork Frontend...${NC}"
 cd "$FRONTEND_DIR"
 
 # Load nvm so the correct Node version is available in this shell session
@@ -107,7 +124,24 @@ mkdir -p "$SCRIPT_DIR/logs"
 nohup npm run dev > "$SCRIPT_DIR/logs/frontend.log" 2>&1 &
 FRONTEND_PID=$!
 echo $FRONTEND_PID > "$PID_DIR/frontend.pid"
-echo -e "${GREEN}✓ Frontend started (PID: $FRONTEND_PID)${NC}"
+echo -e "${GREEN}✓ Cowork frontend started (PID: $FRONTEND_PID)${NC}"
+
+# Start CoSight Frontend
+echo -e "${BLUE}Starting CoSight Frontend...${NC}"
+cd "$COSIGHT_DIR"
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+if [ ! -d "node_modules" ]; then
+    echo "Installing CoSight npm dependencies..."
+    npm install --silent
+fi
+
+nohup npm run dev > "$SCRIPT_DIR/logs/cosight.log" 2>&1 &
+COSIGHT_PID=$!
+echo $COSIGHT_PID > "$PID_DIR/cosight.pid"
+echo -e "${GREEN}✓ CoSight frontend started (PID: $COSIGHT_PID)${NC}"
 
 # Wait a moment for services to start
 sleep 3
@@ -118,6 +152,7 @@ echo -e "${BLUE}Checking services...${NC}"
 
 BACKEND_RUNNING=false
 FRONTEND_RUNNING=false
+COSIGHT_RUNNING=false
 
 if ps -p $(cat "$PID_DIR/backend.pid") > /dev/null 2>&1; then
     BACKEND_RUNNING=true
@@ -128,22 +163,32 @@ fi
 
 if ps -p $(cat "$PID_DIR/frontend.pid") > /dev/null 2>&1; then
     FRONTEND_RUNNING=true
-    echo -e "${GREEN}✓ Frontend is running on http://localhost:5173${NC}"
+    echo -e "${GREEN}✓ Cowork frontend is running on http://localhost:5173${NC}"
 else
-    echo -e "${RED}✗ Frontend failed to start. Check logs/frontend.log${NC}"
+    echo -e "${RED}✗ Cowork frontend failed to start. Check logs/frontend.log${NC}"
+fi
+
+if ps -p $(cat "$PID_DIR/cosight.pid") > /dev/null 2>&1; then
+    COSIGHT_RUNNING=true
+    echo -e "${GREEN}✓ CoSight frontend is running on http://localhost:5174${NC}"
+else
+    echo -e "${RED}✗ CoSight frontend failed to start. Check logs/cosight.log${NC}"
 fi
 
 echo ""
-if $BACKEND_RUNNING && $FRONTEND_RUNNING; then
-    echo -e "${GREEN}╔═══════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║     Cowork is ready!                  ║${NC}"
-    echo -e "${GREEN}║                                       ║${NC}"
-    echo -e "${GREEN}║     Frontend: http://localhost:5173   ║${NC}"
-    echo -e "${GREEN}║     Backend:  http://localhost:8000   ║${NC}"
-    echo -e "${GREEN}║     API Docs: http://localhost:8000/docs${NC}"
-    echo -e "${GREEN}║                                       ║${NC}"
-    echo -e "${GREEN}║     Run ./stop.sh to stop services    ║${NC}"
-    echo -e "${GREEN}╚═══════════════════════════════════════╝${NC}"
+if $BACKEND_RUNNING && $FRONTEND_RUNNING && $COSIGHT_RUNNING; then
+    echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║     All services ready!                  ║${NC}"
+    echo -e "${GREEN}║                                          ║${NC}"
+    echo -e "${GREEN}║     Cowork:   http://localhost:5173      ║${NC}"
+    echo -e "${GREEN}║     CoSight:  http://localhost:5174      ║${NC}"
+    echo -e "${GREEN}║     Backend:  http://localhost:8000      ║${NC}"
+    echo -e "${GREEN}║     API Docs: http://localhost:8000/docs ║${NC}"
+    echo -e "${GREEN}║                                          ║${NC}"
+    echo -e "${GREEN}║     ./stop.sh   to stop all              ║${NC}"
+    echo -e "${GREEN}║     ./status.sh to check health          ║${NC}"
+    echo -e "${GREEN}║     ./logs.sh   to tail logs             ║${NC}"
+    echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
 else
     echo -e "${RED}Some services failed to start. Check the logs directory.${NC}"
     exit 1

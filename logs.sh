@@ -15,27 +15,34 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 echo -e "${BLUE}"
-echo "╔═══════════════════════════════════════╗"
-echo "║         Cowork - Live Logs            ║"
-echo "╚═══════════════════════════════════════╝"
+echo "╔══════════════════════════════════════════╗"
+echo "║     Cowork + CoSight - Live Logs         ║"
+echo "╚══════════════════════════════════════════╝"
 echo -e "${NC}"
-echo -e "  ${GREEN}[BACKEND]${NC}  backend log output"
-echo -e "  ${CYAN}[FRONTEND]${NC} frontend log output"
+echo -e "  ${GREEN}[BACKEND] ${NC} backend log output"
+echo -e "  ${CYAN}[COWORK]  ${NC} Cowork frontend log"
+echo -e "  ${YELLOW}[COSIGHT] ${NC} CoSight frontend log"
 echo ""
-echo -e "${YELLOW}Press Ctrl+C to stop tailing${NC}"
+echo -e "Press Ctrl+C to stop tailing"
 echo "────────────────────────────────────────"
 echo ""
 
-# Check log files exist
-if [ ! -f "$LOG_DIR/backend.log" ] && [ ! -f "$LOG_DIR/frontend.log" ]; then
+if [ ! -f "$LOG_DIR/backend.log" ] && [ ! -f "$LOG_DIR/frontend.log" ] && [ ! -f "$LOG_DIR/cosight.log" ]; then
     echo -e "${RED}No log files found. Run ./start.sh first.${NC}"
     exit 1
 fi
 
-# Tail both logs simultaneously, prefixing each line with source
-tail -f "$LOG_DIR/backend.log" "$LOG_DIR/frontend.log" 2>/dev/null | awk '
-    /^==> .*backend.log <==/ { source="BACKEND";  next }
-    /^==> .*frontend.log <==/ { source="FRONTEND"; next }
+# Build file list of logs that exist
+LOG_FILES=()
+[ -f "$LOG_DIR/backend.log"  ] && LOG_FILES+=("$LOG_DIR/backend.log")
+[ -f "$LOG_DIR/frontend.log" ] && LOG_FILES+=("$LOG_DIR/frontend.log")
+[ -f "$LOG_DIR/cosight.log"  ] && LOG_FILES+=("$LOG_DIR/cosight.log")
+
+tail -f "${LOG_FILES[@]}" 2>/dev/null | awk '
+    /==> .*backend.log <=/  { source="BACKEND";  next }
+    /==> .*frontend.log <=/ { source="COWORK";   next }
+    /==> .*cosight.log <=/  { source="COSIGHT";  next }
     source == "BACKEND"  { print "\033[0;32m[BACKEND] \033[0m" $0 }
-    source == "FRONTEND" { print "\033[0;36m[FRONTEND]\033[0m " $0 }
+    source == "COWORK"   { print "\033[0;36m[COWORK]  \033[0m" $0 }
+    source == "COSIGHT"  { print "\033[1;33m[COSIGHT] \033[0m" $0 }
 '
