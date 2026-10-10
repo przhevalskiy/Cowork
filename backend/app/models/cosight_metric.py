@@ -16,6 +16,18 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
+class TopPost(BaseModel):
+    """Top-performing Sprout post in the selected date range."""
+
+    text: str
+    platform: str
+    profile_name: str
+    created_time: str
+    permalink: Optional[str] = None
+    impressions: float = 0
+    engagements: float = 0
+
+
 class Channel(str, Enum):
     SOCIAL = "social"
     EMAIL = "email"
@@ -72,6 +84,7 @@ class ChannelMetrics(BaseModel):
     summary: List[NormalizedMetric] = Field(default_factory=list)
     # Time-series rows (each has a date_bucket)
     timeseries: List[NormalizedMetric] = Field(default_factory=list)
+    top_posts: List[TopPost] = Field(default_factory=list)
     # Status from the last fetch attempt
     status: str = "ok"  # "ok" | "stale" | "error"
     error_message: Optional[str] = None

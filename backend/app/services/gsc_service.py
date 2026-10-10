@@ -30,10 +30,9 @@ _LAG_DAYS = 3   # GSC data lag — shift end_date back this many days if needed
 def _get_credentials():
     from google.oauth2 import service_account
 
-    settings = get_settings()
-    if not settings.google_credentials_json:
-        raise RuntimeError("GOOGLE_CREDENTIALS_JSON is not configured")
-    info = json.loads(settings.google_credentials_json)
+    from app.services.google_credentials import load_service_account_info
+
+    info = load_service_account_info()
     return service_account.Credentials.from_service_account_info(info, scopes=_GSC_SCOPES)
 
 

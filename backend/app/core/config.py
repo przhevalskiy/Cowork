@@ -34,6 +34,7 @@ class Settings(BaseSettings):
 
     # CoSight — Google APIs (GA4 + GSC share one service-account JSON)
     google_credentials_json: str = ""     # full JSON string of the service-account key
+    google_credentials_file: str = ""     # alternative: path to the JSON key file
     ga4_property_id: str = "288367390"   # numeric property ID, NOT G-XXXX
     gsc_site_url: str = "https://business.columbia.edu/"
 
@@ -44,6 +45,10 @@ class Settings(BaseSettings):
 
     # CoSight — Sprout Social (pending credential)
     sprout_api_token: str = ""
+    # Sprout group IDs for Columbia Business School (Business School, The Hub, Exec Ed)
+    sprout_cbs_group_ids: str = "2415696,2468619,2551611"
+    # Sprout/Facebook metrics are incomplete for recent days; exclude from latest date.
+    sprout_data_lag_days: int = 2
 
     # CoSight — Event Registry (media mentions)
     eventregistry_api_key: str = ""

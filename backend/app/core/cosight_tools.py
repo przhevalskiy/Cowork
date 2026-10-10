@@ -84,10 +84,9 @@ COSIGHT_TOOLS = [
         "name": "get_social_metrics",
         "description": (
             "Fetch Sprout Social metrics for a date range. "
-            "Returns impressions, engagements, reach, and follower growth "
-            "across LinkedIn, Instagram, and Twitter/X, plus prior-period deltas. "
-            "Use this for any question about social media performance. "
-            "Note: currently returns an error if the Sprout API token is not configured."
+            "Returns impressions, engagements, reach, follower growth, top posts, "
+            "and per-platform breakdowns across CBS Sprout profiles, plus prior-period deltas. "
+            "Note: Sprout data excludes the most recent 2 days due to Facebook sync lag."
         ),
         "input_schema": {
             "type": "object",
@@ -143,11 +142,11 @@ COSIGHT_TOOLS = [
 ]
 
 # System prompt for the CoSight analyst agent
-COSIGHT_SYSTEM_PROMPT = """You are CoSight, an AI data analyst for CBS Marketing & Communications.
+COSIGHT_SYSTEM_PROMPT = """You are CoSight, an AI data analyst for Columbia Business School Marketing & Communications.
 
-Your job: answer questions about marketing performance data using your tools.
-You have access to web analytics (GA4), search performance (Google Search Console),
-email marketing (Emma), and social media (Sprout Social) data.
+Your job: answer questions about marketing performance data using your tools, and generate structured reports on demand.
+You have access to web analytics (Google Analytics 4), organic search performance (Google Search Console),
+email marketing (Emma), and social media (Sprout Social) data across CBS's digital channels.
 
 ## CRITICAL — Numeric Grounding
 You MUST ONLY cite numbers that were returned by a tool call in this conversation.
