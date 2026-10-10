@@ -48,13 +48,22 @@ export const ChatPage: React.FC = () => {
     el.style.height = Math.min(el.scrollHeight, 200) + 'px';
   }, [input]);
 
-  // Init: create discussion + auto-send if navigated with context
+  // Init: create discussion + auto-send if navigated with context.
+  // Also re-fires when location.state changes (same-route navigation from
+  // quick-action buttons that navigate('/chat', { state: { seedMessage } })
+  // while already on /chat — React Router doesn't remount, but state updates).
+  const lastSeedRef = useRef<string | undefined>(undefined);
   useEffect(() => {
+    // Guard: don't re-send the same seedMessage twice (strict-mode double-invoke
+    // or location.state identity change without a real new message).
+    if (seedMessage && seedMessage === lastSeedRef.current) return;
+
     (async () => {
       const id = await createDiscussion();
       setActiveDiscussion(id);
 
       if (seedMessage) {
+        lastSeedRef.current = seedMessage;
         await sendMessage(seedMessage);
       } else if (scopedContext?.metric_key) {
         const dr  = dateRange ? `${dateRange.start} to ${dateRange.end}` : 'the current period';
@@ -66,8 +75,9 @@ export const ChatPage: React.FC = () => {
         await sendMessage(msg, scopedContext);
       }
     })();
+  // location.state is the trigger — re-run whenever the caller pushes new state
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location.state]);
 
   // Auto-scroll
   useEffect(() => {
@@ -97,8 +107,8 @@ export const ChatPage: React.FC = () => {
       {isEmpty && (
         <div className="cs-chat__empty-state">
           <ChibiAvatars />
-          <h2 className="cs-chat__empty-title">Ask Cosight anything</h2>
-          <p className="cs-chat__empty-sub">Get instant answers about CBS marketing performance.</p>
+          <h2 className="cs-chat__empty-title">Ask CoSight anything</h2>
+          <p className="cs-chat__empty-sub">Get instant answers about CBS marketing performance — web, search, email, and social.</p>
           <div className="cs-chat__quick-actions">
             {QUICK_ACTIONS.map(q => (
               <button key={q} className="cs-quick-btn" onClick={() => sendMessage(q)}>
