@@ -1,14 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMetricsStore } from '../../stores/metricsStore';
 import { KPICard } from './KPICard';
 import { TrendChart } from './TrendChart';
 import { DataTable } from './DataTable';
+import { DashboardPageShell } from './DashboardPageShell';
 import { DateRangePicker } from './DateRangePicker';
-import { StaleBadge, LoadingSkeleton, EmptyState, ErrorState } from './ChannelStatus';
-import { AgentInputBar } from '../shared/AgentInputBar';
+import { StaleBadge, LoadingSkeleton, EmptyState, ErrorState, ConnectorError } from './ChannelStatus';
+import { WEB_PROMPTS } from '../shared/dashboardPrompts';
 import { getChannelCsvUrl } from '../../services/api';
-import type { ScopedContext } from '../../types';
+import {
+  timeseriesInsightContext,
+  tableInsightContext,
+} from '../../utils/insightContext';
+import type { DashboardInsightSection, ScopedContext } from '../../types';
 import './Page.css';
 
 export const WebPage: React.FC = () => {
@@ -19,35 +24,73 @@ export const WebPage: React.FC = () => {
 
   const isLoading = loading['web'];
   const error = errors['web'];
-  const handleDrillIn = (ctx: ScopedContext) =>
-    navigate('/chat', { state: { scopedContext: ctx, dateRange } });
+  const handleDrillIn = useCallback(
+    (ctx: ScopedContext) => navigate('/chat', { state: { scopedContext: ctx, dateRange } }),
+    [navigate, dateRange],
+  );
 
-  // Build top-pages table from timeseries dimension data
-  const topPages = web?.summary
-    .filter(m => m.metric_key === 'sessions' && m.dimension)
-    .slice(0, 20)
-    .map(m => ({ page: m.dimension!, sessions: m.value })) || [];
+  const summaryKpis = web?.summary.filter(m => !m.dimension) ?? [];
+  const topPages = useMemo(
+    () => (web?.summary ?? [])
+      .filter(m => m.metric_key === 'sessions' && m.dimension)
+      .slice(0, 20)
+      .map(m => ({ page: m.dimension!, sessions: m.value })),
+    [web],
+  );
 
-  return (
-    <div className="cs-page">
-      <div className="cs-page__header">
-        <h1>Web Analytics</h1>
-        {web && <StaleBadge status={web.status} channel="web" message={web.error_message} />}
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
-      </div>
+  const insightSections = useMemo((): DashboardInsightSection[] => {
+    if (!web) return [];
+    const sections: DashboardInsightSection[] = [];
+    const dr = `${dateRange.start} to ${dateRange.end}`;
 
-      {isLoading && <LoadingSkeleton rows={4} />}
-      {!isLoading && error && <ErrorState message={error} />}
-      {!isLoading && !error && !web && <EmptyState />}
-
-      {!isLoading && web && (
-        <>
+    // ── KPI grid — split layout ──────────────────────────────────────────
+    if (summaryKpis.length > 0) {
+      sections.push({
+        id: 'kpi-overview',
+        layout: 'split',
+        content: (
           <div className="kpi-grid">
-            {web.summary.filter(m => !m.dimension).map((m, i) => (
-              <KPICard key={i} metric={m} dateRange={dateRange} onDrillIn={handleDrillIn} />
+            {summaryKpis.map(metric => (
+              <KPICard
+                key={metric.metric_key}
+                metric={metric}
+                dateRange={dateRange}
+                onDrillIn={handleDrillIn}
+              />
             ))}
           </div>
+        ),
+        context: {
+          section: 'kpi_overview',
+          channel: 'web',
+          date_range: dr,
+          metrics: summaryKpis.map(m => ({
+            key: m.metric_key,
+            label: m.label ?? m.metric_key.replace(/_/g, ' '),
+            value: m.value,
+            delta_pct: m.delta_pct,
+            unit: m.unit,
+          })),
+        },
+        continuePrompt: `Dig deeper into CBS web analytics for ${dr}. What drove the changes across sessions, users, and engagement?`,
+        scopedContext: {
+          channel: 'web',
+          metric_key: 'kpi_overview',
+          label: 'Web KPIs',
+          date_range: `${dateRange.start}/${dateRange.end}`,
+        },
+      });
+    }
 
+    // ── Sessions & Active Users trend — stacked ──────────────────────────
+    if (web.timeseries.length > 0) {
+      const tsSeries = [
+        { key: 'sessions', label: 'Sessions' },
+        { key: 'active_users', label: 'Active Users' },
+      ];
+      sections.push({
+        id: 'sessions-trend',
+        content: (
           <TrendChart
             title="Sessions & Active Users"
             timeseries={web.timeseries}
@@ -56,18 +99,70 @@ export const WebPage: React.FC = () => {
               { key: 'active_users', label: 'Active Users', color: '#5b9bd5' },
             ]}
           />
+        ),
+        context: timeseriesInsightContext('Sessions & Active Users', web.timeseries, tsSeries),
+        continuePrompt: `Explain the sessions and active users trend for CBS web (${dr}). Any spikes, drops, or divergence?`,
+        scopedContext: {
+          channel: 'web',
+          metric_key: 'sessions_trend',
+          label: 'Sessions & Active Users',
+          date_range: `${dateRange.start}/${dateRange.end}`,
+        },
+      });
+    }
 
-          {topPages.length > 0 && (
-            <DataTable
-              title="Top Pages"
-              headers={['page', 'sessions']}
-              rows={topPages}
-              csvUrl={getChannelCsvUrl('web', dateRange)}
-            />
+    // ── Top Pages — stacked ──────────────────────────────────────────────
+    if (topPages.length > 0) {
+      sections.push({
+        id: 'top-pages',
+        content: (
+          <DataTable
+            title="Top Pages"
+            headers={['page', 'sessions']}
+            rows={topPages}
+            csvUrl={getChannelCsvUrl('web', dateRange)}
+          />
+        ),
+        context: tableInsightContext('Top Pages', topPages.length, undefined),
+        continuePrompt: `What patterns stand out in the top CBS web pages for ${dr}? What's working and what needs attention?`,
+        scopedContext: {
+          channel: 'web',
+          metric_key: 'top_pages',
+          label: 'Top Pages',
+          date_range: `${dateRange.start}/${dateRange.end}`,
+        },
+      });
+    }
+
+    return sections;
+  }, [web, summaryKpis, topPages, dateRange, handleDrillIn]);
+
+  const metricsReady = !isLoading && !!web;
+
+  return (
+    <DashboardPageShell
+      channel="web"
+      dateRange={dateRange}
+      metricsReady={metricsReady}
+      insightSections={insightSections}
+      header={(
+        <>
+          <div className="cs-page__header">
+            <h1>Web Analytics</h1>
+            <span className="cs-page__scope">Columbia Business School</span>
+            {web && <StaleBadge status={web.status} channel="web" message={web.error_message} />}
+            <DateRangePicker value={dateRange} onChange={setDateRange} />
+          </div>
+          {isLoading && <LoadingSkeleton rows={2} />}
+          {!isLoading && error && <ErrorState message={error} />}
+          {!isLoading && !error && web?.status === 'error' && (
+            <ConnectorError channel="Web" message={web.error_message} />
           )}
-          <AgentInputBar navigateOnSend />
+          {!isLoading && !error && !web && <EmptyState />}
         </>
       )}
-    </div>
+      quickPrompts={WEB_PROMPTS}
+      inputPlaceholder="Ask CoSight about web traffic and top pages…"
+    />
   );
 };
