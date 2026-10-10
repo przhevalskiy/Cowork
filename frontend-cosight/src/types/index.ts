@@ -2,6 +2,7 @@
  * CoSight canonical types — mirror the backend Pydantic models exactly.
  * All dashboard components and AI tools consume only these shapes.
  */
+import type { ReactNode } from 'react';
 
 export type Channel = 'social' | 'email' | 'web' | 'search';
 export type MetricUnit = 'count' | 'rate' | 'percent' | 'position' | 'duration' | 'currency';
@@ -19,12 +20,37 @@ export interface NormalizedMetric {
   dimension?: string;
 }
 
+export interface TopPost {
+  text: string;
+  platform: string;
+  profile_name: string;
+  created_time: string;
+  permalink?: string;
+  impressions: number;
+  engagements: number;
+}
+
+export interface BriefCitation {
+  id: number;
+  metric_key: string;
+  label: string;
+  value: number;
+  formatted_value: string;
+  unit: MetricUnit;
+  source: string;
+  channel: string;
+  date_range: string;
+  detail: string;
+  delta_pct?: number;
+}
+
 export interface ChannelMetrics {
   channel: Channel;
   start_date: string;
   end_date: string;
   summary: NormalizedMetric[];
   timeseries: NormalizedMetric[];
+  top_posts?: TopPost[];
   status: ChannelStatus;
   error_message?: string;
   cached_at?: string;
@@ -96,4 +122,14 @@ export interface CoSightMessage {
 export interface DateRange {
   start: string;
   end: string;
+}
+
+export interface DashboardInsightSection {
+  id: string;
+  content: ReactNode;
+  context: Record<string, unknown>;
+  continuePrompt: string;
+  scopedContext?: ScopedContext;
+  /** 'split' renders cards left + AI annotation right. Default: 'stacked'. */
+  layout?: 'stacked' | 'split';
 }

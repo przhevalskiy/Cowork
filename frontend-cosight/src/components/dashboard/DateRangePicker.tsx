@@ -9,11 +9,13 @@ import './DateRangePicker.css';
 interface Props {
   value: DateRange;
   onChange: (range: DateRange) => void;
+  /** Days to subtract from today for the latest selectable end date (default: 1). */
+  endLagDays?: number;
 }
 
-function daysAgo(n: number): DateRange {
+function daysAgo(n: number, endLagDays = 1): DateRange {
   const end = new Date();
-  end.setDate(end.getDate() - 1);
+  end.setDate(end.getDate() - endLagDays);
   const start = new Date(end);
   start.setDate(start.getDate() - (n - 1));
   return {
@@ -23,13 +25,18 @@ function daysAgo(n: number): DateRange {
 }
 
 const PRESETS = [
-  { label: '7d', range: () => daysAgo(7) },
-  { label: '30d', range: () => daysAgo(30) },
-  { label: '90d', range: () => daysAgo(90) },
+  { label: '7d', days: 7 },
+  { label: '30d', days: 30 },
+  { label: '90d', days: 90 },
 ];
 
-export const DateRangePicker: React.FC<Props> = ({ value, onChange }) => {
+export const DateRangePicker: React.FC<Props> = ({ value, onChange, endLagDays = 1 }) => {
   const [custom, setCustom] = useState(false);
+  const maxEnd = (() => {
+    const end = new Date();
+    end.setDate(end.getDate() - endLagDays);
+    return end.toISOString().split('T')[0];
+  })();
 
   return (
     <div className="date-range-picker">
@@ -37,7 +44,7 @@ export const DateRangePicker: React.FC<Props> = ({ value, onChange }) => {
         <button
           key={p.label}
           className="drp-preset"
-          onClick={() => { onChange(p.range()); setCustom(false); }}
+          onClick={() => { onChange(daysAgo(p.days, endLagDays)); setCustom(false); }}
         >
           {p.label}
         </button>
@@ -50,8 +57,8 @@ export const DateRangePicker: React.FC<Props> = ({ value, onChange }) => {
           <input type="date" value={value.start} max={value.end}
             onChange={e => onChange({ ...value, start: e.target.value })} />
           <span>–</span>
-          <input type="date" value={value.end} min={value.start}
-            onChange={e => onChange({ ...value, end: e.target.value })} />
+          <input type="date" value={value.end} min={value.start} max={maxEnd}
+            onChange={e => onChange({ ...value, end: e.target.value > maxEnd ? maxEnd : e.target.value })} />
         </div>
       )}
       <span className="drp-current">{value.start} → {value.end}</span>

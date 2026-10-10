@@ -8,21 +8,21 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useChatStore } from '../../stores/chatStore';
+import { OVERVIEW_PROMPTS, type DashboardPrompt } from './dashboardPrompts';
 import './AgentInputBar.css';
-
-const QUICK_PROMPTS = [
-  { label: 'Summarize last 30 days', prompt: 'Summarize marketing performance across all channels for the last 30 days' },
-  { label: "What's trending?", prompt: 'What are the biggest trends and changes in our marketing data this month?' },
-  { label: 'Compare channels', prompt: 'Compare performance across web, search, email, and social for the last 30 days' },
-  { label: 'Build a report', prompt: 'Build a monthly marketing performance report for the last 30 days' },
-];
 
 interface Props {
   /** If true, navigates to /chat on submit instead of streaming inline */
   navigateOnSend?: boolean;
+  quickPrompts?: DashboardPrompt[];
+  placeholder?: string;
 }
 
-export const AgentInputBar: React.FC<Props> = ({ navigateOnSend = true }) => {
+export const AgentInputBar: React.FC<Props> = ({
+  navigateOnSend = true,
+  quickPrompts = OVERVIEW_PROMPTS,
+  placeholder = 'Ask CoSight anything about your marketing data…',
+}) => {
   const [input, setInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
@@ -75,7 +75,7 @@ export const AgentInputBar: React.FC<Props> = ({ navigateOnSend = true }) => {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask CoSight anything about your marketing data…"
+          placeholder={placeholder}
           rows={1}
           disabled={isStreaming}
         />
@@ -96,7 +96,7 @@ export const AgentInputBar: React.FC<Props> = ({ navigateOnSend = true }) => {
       </div>
 
       <div className="agent-quick-prompts">
-        {QUICK_PROMPTS.map(q => (
+        {quickPrompts.map(q => (
           <button
             key={q.label}
             className="agent-quick-btn"

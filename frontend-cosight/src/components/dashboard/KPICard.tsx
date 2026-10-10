@@ -5,6 +5,7 @@
  */
 import React from 'react';
 import type { NormalizedMetric, ScopedContext, DateRange } from '../../types';
+import { formatMetricValue } from '../../utils/formatNumber';
 import './KPICard.css';
 
 interface Props {
@@ -14,22 +15,12 @@ interface Props {
 }
 
 function formatValue(metric: NormalizedMetric): string {
-  const { value, unit } = metric;
-  if (unit === 'percent') return `${value.toFixed(1)}%`;
-  if (unit === 'rate') return `${(value * 100).toFixed(1)}%`;
-  if (unit === 'position') return value.toFixed(1);
-  if (unit === 'duration') {
-    const mins = Math.floor(value / 60);
-    const secs = Math.round(value % 60);
-    return `${mins}m ${secs}s`;
-  }
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-  return value.toFixed(0);
+  return formatMetricValue(metric.value, metric.unit);
 }
 
 export const KPICard: React.FC<Props> = ({ metric, dateRange, onDrillIn }) => {
-  const label = metric.label || metric.metric_key.replace(/_/g, ' ');
+  const baseLabel = metric.label || metric.metric_key.replace(/_/g, ' ');
+  const label = metric.dimension ? `${baseLabel} · ${metric.dimension}` : baseLabel;
   const hasDelta = metric.delta_pct !== undefined && metric.delta_pct !== null;
   const isPositive = hasDelta && metric.delta_pct! > 0;
   // For position metrics, lower is better — invert the color

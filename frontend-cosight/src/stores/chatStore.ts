@@ -4,6 +4,7 @@ import * as api from '../services/api';
 
 interface ChatState {
   discussions: Array<{ id: string; title: string; updated_at: string }>;
+  discussionsLoading: boolean;
   activeDiscussionId: string | null;
   messages: CoSightMessage[];
   isStreaming: boolean;
@@ -26,6 +27,7 @@ let abortController: AbortController | null = null;
 
 export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   discussions: [],
+  discussionsLoading: false,
   activeDiscussionId: null,
   messages: [],
   isStreaming: false,
@@ -35,11 +37,12 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   error: null,
 
   loadDiscussions: async () => {
+    set({ discussionsLoading: true });
     try {
       const data = await api.listDiscussions();
-      set({ discussions: data });
+      set({ discussions: data, discussionsLoading: false });
     } catch (e) {
-      set({ error: (e as Error).message });
+      set({ error: (e as Error).message, discussionsLoading: false });
     }
   },
 

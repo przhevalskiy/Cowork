@@ -2,6 +2,7 @@
  * DataTable — sortable, filterable, paginated table with CSV download.
  */
 import React, { useState, useMemo } from 'react';
+import { formatCount } from '../../utils/formatNumber';
 import './DataTable.css';
 
 interface Props {
@@ -40,6 +41,19 @@ export const DataTable: React.FC<Props> = ({ headers, rows, title, csvUrl, pageS
 
   const totalPages = Math.ceil(sorted.length / pageSize);
   const paginated = sorted.slice(page * pageSize, (page + 1) * pageSize);
+
+  const formatCell = (key: string, value: unknown): React.ReactNode => {
+    if (value === null || value === undefined || value === '') return '—';
+    if (typeof value === 'number') return formatCount(value);
+    if (key === 'link' && typeof value === 'string' && value.startsWith('http')) {
+      return (
+        <a href={value} target="_blank" rel="noopener noreferrer" className="data-table__link">
+          View
+        </a>
+      );
+    }
+    return String(value);
+  };
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -86,7 +100,7 @@ export const DataTable: React.FC<Props> = ({ headers, rows, title, csvUrl, pageS
               paginated.map((row, i) => (
                 <tr key={i}>
                   {headers.map(h => (
-                    <td key={h}>{String(row[h] ?? '—')}</td>
+                    <td key={h}>{formatCell(h, row[h])}</td>
                   ))}
                 </tr>
               ))

@@ -89,6 +89,140 @@ export async function deleteDiscussion(id: string): Promise<void> {
   await request(`/api/cosight/chat/discussions/${id}`, { method: 'DELETE' });
 }
 
+// ── Dashboard brief (SSE) ───────────────────────────────────────────────────
+
+export interface StreamBriefOptions {
+  channel: string;
+  dateRange: DateRange;
+  note?: string;
+  onCitations: (citations: import('../types').BriefCitation[]) => void;
+  onChunk: (text: string) => void;
+  onDone: () => void;
+  onError: (msg: string) => void;
+  signal?: AbortSignal;
+}
+
+export async function streamBrief(opts: StreamBriefOptions): Promise<void> {
+  const res = await fetch(`${API_URL}/api/cosight/brief/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      channel: opts.channel,
+      start_date: opts.dateRange.start,
+      end_date: opts.dateRange.end,
+      note: opts.note ?? null,
+    }),
+    signal: opts.signal,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Brief stream failed: HTTP ${res.status}`);
+  }
+
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const event = JSON.parse(line.slice(6));
+        switch (event.type) {
+          case 'citations':
+            opts.onCitations(event.citations);
+            break;
+          case 'chunk':
+            opts.onChunk(event.content);
+            break;
+          case 'error':
+            opts.onError(event.error);
+            break;
+          case 'done':
+            opts.onDone();
+            return;
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+  }
+
+  opts.onDone();
+}
+
+// ── Section insight (SSE) ─────────────────────────────────────────────────────
+
+export interface StreamSectionBriefOptions {
+  channel: string;
+  sectionId: string;
+  dateRange: DateRange;
+  context: Record<string, unknown>;
+  onChunk: (text: string) => void;
+  onDone: () => void;
+  onError: (msg: string) => void;
+  signal?: AbortSignal;
+}
+
+export async function streamSectionBrief(opts: StreamSectionBriefOptions): Promise<void> {
+  const res = await fetch(`${API_URL}/api/cosight/brief/section/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      channel: opts.channel,
+      section: opts.sectionId,
+      start_date: opts.dateRange.start,
+      end_date: opts.dateRange.end,
+      context: opts.context,
+    }),
+    signal: opts.signal,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Section brief stream failed: HTTP ${res.status}`);
+  }
+
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const event = JSON.parse(line.slice(6));
+        switch (event.type) {
+          case 'chunk':
+            opts.onChunk(event.content);
+            break;
+          case 'error':
+            opts.onError(event.error);
+            break;
+          case 'done':
+            opts.onDone();
+            return;
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+  }
+
+  opts.onDone();
+}
+
 // ── Streaming chat ────────────────────────────────────────────────────────────
 
 export interface StreamChatOptions {

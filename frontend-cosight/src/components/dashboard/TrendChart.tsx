@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { toPng } from 'html-to-image';
 import type { NormalizedMetric } from '../../types';
+import { formatAxisCount } from '../../utils/formatNumber';
 import './TrendChart.css';
 
 interface Series {
@@ -84,19 +85,22 @@ export const TrendChart: React.FC<Props> = ({ title, timeseries, series, height 
             <YAxis
               yAxisId="left"
               tick={{ fontSize: 11, fill: '#6b7280' }}
-              width={50}
+              width={56}
+              tickFormatter={formatAxisCount}
             />
             {hasDualAxis && (
               <YAxis
                 yAxisId="right"
                 orientation="right"
                 tick={{ fontSize: 11, fill: '#6b7280' }}
-                width={50}
+                width={56}
+                tickFormatter={formatAxisCount}
               />
             )}
             <Tooltip
               contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e2e8f0' }}
               labelFormatter={formatDate}
+              formatter={(value: number, name: string) => [formatAxisCount(Number(value)), name]}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             {series.map((s, i) => (

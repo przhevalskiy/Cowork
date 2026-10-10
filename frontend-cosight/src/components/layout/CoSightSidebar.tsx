@@ -178,6 +178,7 @@ export const CoSightSidebar: React.FC = () => {
 
   const {
     discussions,
+    discussionsLoading,
     activeDiscussionId,
     loadDiscussions,
     createDiscussion,
@@ -271,6 +272,16 @@ export const CoSightSidebar: React.FC = () => {
 
       {/* ── Conversations list ── */}
       <div className="sidebar-conversations">
+        {discussionsLoading && discussions.length === 0 && (
+          <div className="sidebar-loading">
+            <div className="spinner" />
+          </div>
+        )}
+        {!discussionsLoading && discussions.length === 0 && !isCollapsed && (
+          <div className="sidebar-empty">
+            <p>No recent sessions</p>
+          </div>
+        )}
         <ConversationGroup
           title="Today"
           items={grouped.today}

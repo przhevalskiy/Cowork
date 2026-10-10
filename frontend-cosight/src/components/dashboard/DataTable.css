@@ -121,3 +121,13 @@ td.empty {
 
 .data-table__pagination button:hover:not(:disabled) { background: var(--gray-50); }
 .data-table__pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.data-table__link {
+  color: var(--cs-blue);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.data-table__link:hover {
+  text-decoration: underline;
+}

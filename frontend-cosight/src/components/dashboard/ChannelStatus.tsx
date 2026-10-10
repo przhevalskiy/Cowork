@@ -32,3 +32,12 @@ export const ErrorState: React.FC<{ message: string }> = ({ message }) => (
     <span>⚠</span> {message}
   </div>
 );
+
+/** Shown when the API returned 200 but the connector reported status=error. */
+export const ConnectorError: React.FC<{ message?: string; channel: string }> = ({ message, channel }) => (
+  <div className="error-state">
+    <span>⚠</span>{' '}
+    <strong>{channel} unavailable.</strong>{' '}
+    {message || 'Check backend credentials and restart the API server.'}
+  </div>
+);
