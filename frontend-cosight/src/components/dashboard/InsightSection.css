@@ -1,0 +1,189 @@
+.insight-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+}
+
+/* ── Base section wrapper ─────────────────────────────────────────────────── */
+
+.insight-section {
+  width: 100%;
+  animation: insightSectionReveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── Stacked layout (default — charts, tables, platform breakdown) ─────────── */
+
+.insight-section--stacked .insight-section__content {
+  width: 100%;
+}
+
+.insight-section--stacked .insight-section__insight {
+  margin-top: 12px;
+  padding: 14px 16px;
+  background: var(--color-white);
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* KPI cards inside stacked sections stay single-column width */
+.insight-section--stacked .kpi-card {
+  max-width: 320px;
+}
+
+/* ── Split layout (KPI grids) ─────────────────────────────────────────────── */
+
+.insight-section--split {
+  display: grid;
+  grid-template-columns: 1fr;          /* stacked on mobile */
+  gap: 16px;
+  align-items: stretch;                /* both columns same height */
+}
+
+@media (min-width: 860px) {
+  .insight-section--split {
+    grid-template-columns: minmax(240px, 2fr) minmax(0, 3fr);
+    gap: 24px;
+  }
+}
+
+.insight-section__split-left {
+  min-width: 0;
+  /* Stretch to match the right column height */
+  display: flex;
+  flex-direction: column;
+}
+
+.insight-section__split-right {
+  min-width: 0;
+}
+
+@media (min-width: 860px) {
+  /* Analysis panel on the left stays sticky while the KPI grid scrolls */
+  .insight-section__split-left {
+    position: sticky;
+    top: 16px;
+  }
+}
+
+/* Annotation card fills the full height of the left column */
+.insight-section__split-left .insight-section__annotation {
+  flex: 1;
+  justify-content: space-between;
+}
+
+/* Larger text inside the split annotation */
+.insight-section__split-left .insight-section__text {
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.insight-section__split-left .insight-section__placeholder {
+  font-size: 15px;
+}
+
+/* ── KPI grid inside split-right ─────────────────────────────────────────── */
+
+.insight-section__split-right .kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+/* ── Annotation panel (used in split layout) ──────────────────────────────── */
+
+.insight-section__annotation {
+  background: var(--color-white);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.insight-section__annotation--waiting {
+  opacity: 0.55;
+}
+
+.insight-section__annotation-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.insight-section__annotation-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* ── Shared text styles ───────────────────────────────────────────────────── */
+
+.insight-section__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--gray-800);
+}
+
+.insight-section__placeholder {
+  margin: 0;
+  font-size: 13px;
+  color: var(--gray-400);
+  font-style: italic;
+}
+
+.insight-section__error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-error);
+}
+
+.insight-section__cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--cs-navy);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+
+.insight-section__continue {
+  align-self: flex-start;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cs-blue);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.insight-section__continue:hover {
+  text-decoration: underline;
+}
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+
+@keyframes insightSectionReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
