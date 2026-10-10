@@ -2,6 +2,8 @@
 
 ## Overview
 
+**Columbia Business Sight** is an AI Agentic Digital Analysis Reporting Platform for CBS Marketing & Communications. It delivers conversational, citation-grounded marketing intelligence by aggregating live data from four channels — web (GA4), organic search (Google Search Console), email (Emma), and social media (Sprout Social) — through a unified canonical metric pipeline. A multi-turn agentic tool-use loop, implemented via Anthropic Claude's native tool use API with a Mistral fallback on overload, powers an AI analyst that calls live data connectors on demand over a real-time SSE streaming interface. The system enforces a strict numeric grounding invariant: the LLM is forbidden from citing any figure not returned by an in-context tool result. Users interact through a real-time streaming dashboard and a conversational chat interface that can generate, persist, and export structured marketing reports (PDF, DOCX, PPTX, CSV).
+
 This document summarizes the CoSight backend implementation completed so far, following the build plan outlined in `COSIGHT_PLAN.md`.
 
 ## Completed Checkpoints
