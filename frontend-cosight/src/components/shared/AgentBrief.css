@@ -1,0 +1,40 @@
+.agent-brief {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #f8faff 0%, #eef4ff 100%);
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+}
+
+.agent-brief--loading {
+  color: var(--gray-600);
+}
+
+.agent-brief--loading p {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
+.agent-brief__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.agent-brief__headline {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cs-navy);
+  line-height: 1.45;
+}
+
+.agent-brief__note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--gray-500);
+  line-height: 1.4;
+}

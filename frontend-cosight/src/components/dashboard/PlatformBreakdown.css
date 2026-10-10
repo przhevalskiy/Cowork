@@ -1,0 +1,137 @@
+.platform-breakdown {
+  background: var(--color-white);
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.platform-breakdown__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.platform-breakdown__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cs-navy);
+  margin: 0;
+}
+
+.platform-breakdown__hint {
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+.platform-breakdown__scroll {
+  overflow-x: auto;
+}
+
+.platform-breakdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-family: 'Albert Sans', sans-serif;
+}
+
+.platform-breakdown thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--gray-600);
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.platform-breakdown thead th:hover {
+  color: var(--cs-navy);
+}
+
+.platform-breakdown tbody td {
+  padding: 12px 14px;
+  color: var(--gray-700);
+  border-bottom: 1px solid var(--gray-100);
+  vertical-align: middle;
+}
+
+.platform-breakdown tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.platform-breakdown tbody tr:hover {
+  background: var(--gray-50);
+}
+
+.platform-breakdown__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--cs-navy);
+  white-space: nowrap;
+}
+
+.platform-breakdown__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.platform-breakdown__metric-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 100px;
+}
+
+.platform-breakdown__bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+}
+
+.platform-breakdown__bar-track {
+  width: 100px;
+  height: 6px;
+  background: var(--gray-100);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.platform-breakdown__bar {
+  height: 100%;
+  border-radius: 3px;
+  min-width: 2px;
+  opacity: 0.9;
+}
+
+.platform-breakdown__value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--cs-navy);
+  white-space: nowrap;
+}
+
+.platform-breakdown__delta {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.platform-breakdown__delta.delta--up {
+  color: var(--color-success);
+}
+
+.platform-breakdown__delta.delta--down {
+  color: var(--color-error);
+}
